@@ -2,7 +2,7 @@
 Free android LiveWallpapers. Creating a slide show from folder. Pictures and videos files.
 
 # Private Police
-# Terms & Privacy
+## Terms & Privacy
 
 ImageWallpaperSC is a free app. This App is provided by {SCrat_ORS} at no cost and is intended for use as is.
 
@@ -20,27 +20,27 @@ By the applicable law within or outside your country of residence, legal process
 By requests from public and governmental authorities
 To protect our legal rights and interests.
 
-# Non-Personal Information:
+## Non-Personal Information:
 
 We may collect and use non-personal information in the following circumstances. To have a better understanding in user’s behavior, solve problems in products and services, improve our products, services and advertising, we may collect non-personal information such as installed application name and package name.
 
 If non-personal information is combined with personal information, we treat the combined information as personal information for the purposes of this Privacy Policy.
 
-# Information we get from your use of our services:
+## Information we get from your use of our services:
 
 Device information: Device-specific information such as your hardware model and operating system version
 Unique application numbers: Certain services include a unique application number. This number and information about your installation (for example, the operating system type and application version number)
 
-# Android Permissions
+## Android Permissions
 
 READ EXTERNAL STORAGE
     - This permission is required for the application to read image and video files located in the folder specified in the application settings.
 
-# Privacy Policy Changes:
+## Privacy Policy Changes:
 
 Our Privacy Policy may change from time to time, we will post any privacy policy changes on this page, so please review it periodically.
 
-# Contact Us:
+## Contact Us:
 If you have any questions about this Privacy Policy, please feel free to contact us. Email：scrators@gmail.com
 
 ## Download this app from Google Play:
