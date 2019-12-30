@@ -1,0 +1,7 @@
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <!-- Created with SVG-edit - http://svg-edit.googlecode.com/ -->
+ <g>
+  <path fill="#5bb7f5" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke="#FFF" stroke-width="1.7"/>
+  <path fill="#FFF" d="m17,16.2l0,-8c0,-0.5 -0.5,-1 -1,-1l-8,0c-0.5,0 -1,0.5 -1,1l0,8c0,0.5 0.5,1 1,1l8,0c0.5,0 1,-0.5 1,-1zm-7,-3l1.5,1.5l2,-2.5l2.5,3.3l-8,0l2,-2.5l0,0.2z"/>
+ </g>
+</svg>

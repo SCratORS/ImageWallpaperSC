@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorGroupText">#545454</color>
+    <color name="colorGroup">#eaeaea</color>
+    <color name="colorDevider">#c0c0c0</color>
+    <color name="colorItem">#f7f7f7</color>
+    <color name="colorPrimary">#f0f0f0</color>
+    <color name="colorAccent">#34c0c5</color>
+
+</resources>

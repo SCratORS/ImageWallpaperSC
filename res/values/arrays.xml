@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="speed_title">
+        <item>@string/speed_fast</item>
+        <item>@string/speed_normal</item>
+        <item>@string/speed_low</item>
+        <item>@string/speed_off</item>
+    </string-array>
+
+    <string-array name="speed_values">
+        <item>1</item>
+        <item>0.5</item>
+        <item>0.2</item>
+        <item>0</item>
+    </string-array>
+
+    <string-array name="touch_title">
+        <item>@string/touch_parallax</item>
+        <item>@string/touch_offset</item>
+        <item>@string/touch_off</item>
+    </string-array>
+
+    <string-array name="touch_values">
+        <item>2</item>
+        <item>1</item>
+        <item>0</item>
+    </string-array>
+
+    <string-array name="quality_title">
+        <item>@string/quality_ultra</item>
+        <item>@string/quality_high</item>
+        <item>@string/quality_normal</item>
+        <item>@string/quality_low</item>
+    </string-array>
+
+    <string-array name="quality_values">
+        <item>1</item>
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+    </string-array>
+
+    <string-array name="blur_title">
+        <item>@string/blur_low</item>
+        <item>@string/blur_normal</item>
+        <item>@string/blur_high</item>
+        <item>@string/blur_ultra</item>
+    </string-array>
+
+    <string-array name="blur_values">
+        <item>2</item>
+        <item>5</item>
+        <item>10</item>
+        <item>20</item>
+    </string-array>
+</resources>
