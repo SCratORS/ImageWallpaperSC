@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen 
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:title="@string/settings_title">
+    <PreferenceCategory android:title="@string/settings_dir" android:layout="@layout/gr_p_l"/>
+    <EditTextPreference
+        android:key="directory"
+        android:layout="@layout/im_p_l"
+        android:icon="@drawable/ic_dir"
+        android:title="@string/select_dir"
+        android:summary="@string/select_dir_summary"
+        android:defaultValue="/" />
+    <PreferenceCategory android:title="@string/settings" android:layout="@layout/gr_p_l"/>
+    <ListPreference
+        android:key="quality"
+        android:layout="@layout/sc_p_l"
+        android:title="@string/quality"
+        android:summary="@string/quality_high"
+        android:defaultValue="2"
+        android:entries="@array/quality_title"
+        android:entryValues="@array/quality_values"/>
+    <EditTextPreference
+        android:key="duration"
+        android:layout="@layout/sc_p_l"
+        android:title="@string/duration"
+        android:summary="20 мин."
+        android:inputType="number"
+        android:defaultValue="20" />
+    <ListPreference
+        android:key="speed"
+        android:layout="@layout/sc_p_l"
+        android:title="@string/speed"
+        android:summary="@string/speed_normal"
+        android:defaultValue="0.5"
+        android:entries="@array/speed_title"
+        android:entryValues="@array/speed_values"/>
+    <ListPreference
+        android:key="touch"
+        android:layout="@layout/sc_p_l"
+        android:title="@string/touch"
+        android:summary="@string/touch_parallax"
+        android:defaultValue="2"
+        android:entries="@array/touch_title"
+        android:entryValues="@array/touch_values"/>
+    <PreferenceCategory android:title="@string/filter" android:layout="@layout/gr_p_l" />
+    <SwitchPreference
+        android:key="sound"
+        android:icon="@drawable/ic_snd"
+        android:layout="@layout/sw_p_l"
+        android:title="@string/sound"
+        android:summary="@string/sound_summary"
+        android:defaultValue="false"/>
+    <SwitchPreference
+        android:key="blur"
+        android:icon="@drawable/ic_blr"
+        android:layout="@layout/sw_p_l"
+        android:title="@string/blur"
+        android:summary="@string/blur_summary"
+        android:defaultValue="false"/>
+    <ListPreference
+        android:key="blur_level"
+        android:layout="@layout/sc_p_l"
+        android:dependency="blur"
+        android:title="@string/blur_setting"
+        android:summary="@string/blur_normal"
+        android:defaultValue="5"
+        android:entries="@array/blur_title"
+        android:entryValues="@array/blur_values"/>
+</PreferenceScreen>

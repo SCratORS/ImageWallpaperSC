@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">ImageWallpaperSC</string>
+    <string name="description">Смотреть все фотографии в альбоме.</string>
+    <string name="settings_title">ImageWallpaperSC - Настройки</string>
+    <string name="app_version">версия 2.1.7</string>
+    <string name="select_dir">Альбом в галерее</string>
+    <string name="select_dir_summary">/</string>
+    <string name="duration">Продолжительность показа</string>
+    <string name="min">мин.</string>
+    <string name="speed">Скорость движения</string>
+    <string name="settings">Параметры отображения</string>
+    <string name="settings_dir">Создать слайд-шоу из</string>
+    <string name="speed_off">Отключено</string>
+    <string name="speed_low">Медленно</string>
+    <string name="speed_normal">Средний</string>
+    <string name="speed_fast">Быстро</string>
+    <string name="quality_ultra">Ультра</string>
+    <string name="quality_high">Высокое</string>
+    <string name="quality_normal">Нормальное</string>
+    <string name="quality_low">Низкое</string>
+    <string name="quality">Качество изображения</string>
+    <string name="filter">Эффекты</string>
+    <string name="sound">Аудио канал</string>
+    <string name="sound_summary">Проигрывать звук в видео</string>
+    <string name="blur">Блюр размытие</string>
+    <string name="blur_summary">Размытие по Гауссу</string>
+    <string name="blur_setting">Сила размытия</string>
+    <string name="blur_low">Слабое размытие</string>
+    <string name="blur_normal">Среднее размытие</string>
+    <string name="blur_high">Сильное размытие</string>
+    <string name="blur_ultra">Очень сильное размытие</string>
+    <string name="touch">Реакция на свайп</string>
+    <string name="touch_parallax">Параллакс эффект</string>
+    <string name="touch_offset">Смещение</string>
+    <string name="touch_off">Отключено</string>
+</resources>
