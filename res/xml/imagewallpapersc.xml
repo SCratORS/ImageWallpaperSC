@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wallpaper
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:description="@string/description"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:description="@string/wallpaper_description"
     android:thumbnail="@drawable/home_wallpaper"
-    android:settingsActivity="com.scrat.imagewallpapersc.ImageWallpaperSCSettings"/>
+    android:showMetadataInPreview="true"
+    android:settingsActivity="com.scrat.imagewallpapersc.ImageWallpaperSCSettings"
+    tools:targetApi="n_mr1" />

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/sw_th_a" android:state_enabled="false" />
-    <item android:drawable="@drawable/sw_th_a_p" android:state_pressed="true" />
-    <item android:drawable="@drawable/sw_th_a" android:state_pressed="false" />
-    <item android:drawable="@drawable/sw_th_off_p" android:state_checked="false" />
-</selector>

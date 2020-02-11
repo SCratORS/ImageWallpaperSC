@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">ImageWallpaperSC</string>
-    <string name="description">Смотреть все фотографии в альбоме.</string>
-    <string name="settings_title">ImageWallpaperSC - Настройки</string>
-    <string name="app_version">версия 2.1.7</string>
-    <string name="select_dir">Альбом в галерее</string>
-    <string name="select_dir_summary">/</string>
+    <string name="app_name">Фоновый рисунок со слайд-шоу</string>
+    <string name="wallpaper_label">Слайд-шоу</string>
+    <string name="wallpaper_description">Смотреть все фотографии в альбоме.</string>
+    <string name="settings_title">Настройки</string>
+    <string name="select_dir">Альбом в Галерее</string>
+    <string name="select_photo_multi">Фотографии из Галереи</string>
     <string name="duration">Продолжительность показа</string>
     <string name="min">мин.</string>
     <string name="speed">Скорость движения</string>

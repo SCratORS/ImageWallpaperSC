@@ -2,10 +2,10 @@ package com.scrat.imagewallpapersc;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
@@ -13,13 +13,17 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.preference.SwitchPreference;
-import android.provider.MediaStore;
+import android.view.MenuItem;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @SuppressLint("ExportedPreferenceActivity")
 public class ImageWallpaperSCSettings extends PreferenceActivity
         implements SharedPreferences.OnSharedPreferenceChangeListener{
-
+    private final int OPEN_DIRECTORY_REQUEST_CODE = 0xf11e;
+    private final int OPEN_MULTIPLE_REQUEST_CODE = 0xf11f;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,50 +33,81 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
         }
 
         addPreferencesFromResource(R.xml.settings);
+
+        android.app.ActionBar actionbar;
+        actionbar = getActionBar();
+        if (actionbar != null) {
+            actionbar.setDisplayHomeAsUpEnabled(true);
+        }
+
         PreferenceManager.getDefaultSharedPreferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
 
-
-
         findPreference("directory").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
-                if  (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-
-                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                    photoPickerIntent.setType("*/*");
-                    startActivityForResult(photoPickerIntent, 1);
-
-                    return true;
-                } else return false;
+                openDirectory();
+                return true;
+            }
+        });
+        findPreference("multi").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                selectMulti();
+                return true;
             }
         });
     }
-    public String getRealPathFromURI (Uri contentUri) {
-        String path = null;
-        String[] proj = { MediaStore.MediaColumns.DATA };
-        Cursor cursor = getContentResolver().query(contentUri, proj, null, null, null);
-        assert cursor != null;
-        if (cursor.moveToFirst()) {
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
-            path = cursor.getString(column_index);
-        }
-        cursor.close();
-        return path;
+
+    private void openDirectory() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |  Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        startActivityForResult(intent, OPEN_DIRECTORY_REQUEST_CODE);
+    }
+
+    private void selectMulti () {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |  Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[] {"image/*", "video/*"});
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        startActivityForResult(intent, OPEN_MULTIPLE_REQUEST_CODE);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        finish();
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent) {
         super.onActivityResult(requestCode, resultCode, imageReturnedIntent);
+        if (resultCode == RESULT_OK) {
+            SharedPreferences.Editor settings = getSharedPreferences("Settings", MODE_PRIVATE).edit();
+            if (requestCode == OPEN_DIRECTORY_REQUEST_CODE) {
 
-        if (requestCode == 1 && resultCode == RESULT_OK) {
-            String[] separated = getRealPathFromURI(imageReturnedIntent.getData()).split("/");
-            StringBuilder folder = new StringBuilder();
-            if (separated.length > 0) {
-                for (int id = 0; id < separated.length - 1; id++) folder.append(separated[id]).append("/");
+                Uri directoryUri = imageReturnedIntent.getData();
+                assert directoryUri != null;
+                getContentResolver().takePersistableUriPermission(
+                        directoryUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                );
+                settings.putString("directory", directoryUri.toString());
+                settings.putInt("mode", 2);
+                settings.apply();
             }
-//            ImageWallpaperSCRender.Path = folder.toString();
-            EditTextPreference directory = (EditTextPreference) findPreference("directory");
-            directory.getEditText().setText(folder.toString());
+            if (requestCode == OPEN_MULTIPLE_REQUEST_CODE) {
+                ArrayList<String> listUri = new ArrayList<>();
+                ClipData clipData = imageReturnedIntent.getClipData();
+                if (clipData!=null)
+                for (int i = 0; i < clipData.getItemCount(); i++) listUri.add(clipData.getItemAt(i).getUri().toString());
+                else listUri.add(Objects.requireNonNull(imageReturnedIntent.getData()).toString());
+                Set<String> arraySet = new HashSet<>(listUri);
+                settings.putStringSet("multi", arraySet);
+                settings.putInt("mode", 1);
+                settings.apply();
+            }
+            sendBroadcast(new Intent("com.scrat.imagewallpapersc.UpdateDBForSaveFolder"));
+            finish();
         }
     }
 
@@ -86,21 +121,8 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
     @Override
     public void onResume() {
         super.onResume();
-        EditTextPreference dir_sel = (EditTextPreference) findPreference("directory");
-        dir_sel.setSummary(dir_sel.getText());
-//        ImageWallpaperSCRender.Path = dir_sel.getText();
-
-//        SwitchPreference chk_blur = (SwitchPreference) findPreference("blur");
-//        ImageWallpaperSCRender.blur = chk_blur.isChecked();
-
-        SwitchPreference chk_snd = (SwitchPreference) findPreference("sound");
- //       ImageWallpaperSCRender.VolumeEnable = chk_snd.isChecked();
-
         EditTextPreference duration = (EditTextPreference) findPreference("duration");
         duration.setSummary(duration.getText() +" "+ getResources().getString(R.string.min));
-//        ImageWallpaperSCRender.Timer = Integer.parseInt(duration.getText());
-
-
         String[] Speed_value = getResources().getStringArray(R.array.speed_values);
         ListPreference SpeedSetting = (ListPreference) findPreference("speed");
         if (SpeedSetting.getValue().equals(Speed_value[0])) {
@@ -165,14 +187,8 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
         Preference pref = findPreference(key);
         if (pref instanceof EditTextPreference) {
             EditTextPreference etp = (EditTextPreference) pref;
-            if (key.equals("directory")) {
-                etp.setSummary(etp.getText());
-//                ImageWallpaperSCRender.Path = etp.getText();
-            }
             if (key.equals("duration")) {
                 etp.setSummary(etp.getText() + " " + getResources().getString(R.string.min));
-//                ImageWallpaperSCRender.Timer = Integer.parseInt(etp.getText());
-//                ImageWallpaperSCRender.TimeSet = ImageWallpaperSCRender.Timer * 60000;
             }
         }
         if (pref instanceof ListPreference) {
@@ -191,7 +207,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 if (ltp.getValue().equals(Speed_value[3])) {
                     ltp.setSummary(getResources().getString(R.string.speed_off));
                 }
-  //              ImageWallpaperSCRender.SetSpeed = Float.parseFloat(ltp.getValue());
             }
             if (key.equals("touch")) {
                 String[] touch_value = getResources().getStringArray(R.array.touch_values);
@@ -204,8 +219,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 if (ltp.getValue().equals(touch_value[0])) {
                     ltp.setSummary(getResources().getString(R.string.touch_parallax));
                 }
-//                ImageWallpaperSCRender.touch = Integer.parseInt(ltp.getValue());
-
             }
             if (key.equals("quality")) {
                 String[] Quality_value = getResources().getStringArray(R.array.quality_values);
@@ -221,7 +234,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 if (ltp.getValue().equals(Quality_value[3])) {
                     ltp.setSummary(getResources().getString(R.string.quality_low));
                 }
-//                ImageWallpaperSCRender.Quality = Integer.parseInt(ltp.getValue());
             }
 
             if (key.equals("blur_level")) {
@@ -238,19 +250,7 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 if (ltp.getValue().equals(Blur_value[3])) {
                     ltp.setSummary(getResources().getString(R.string.blur_ultra));
                 }
-//                ImageWallpaperSCRender.LevelGausse = Integer.parseInt(ltp.getValue());
             }
         }
-/*
-        if (pref instanceof SwitchPreference) {
-            if (key.equals("blur")) {
-                ImageWallpaperSCRender.blur = (sharedPreferences.getBoolean("blur", false));
-            }
-            if (key.equals("sound")) {
-                ImageWallpaperSCRender.VolumeEnable = (sharedPreferences.getBoolean("sound", false));
-            }
-        }
-
- */
     }
 }

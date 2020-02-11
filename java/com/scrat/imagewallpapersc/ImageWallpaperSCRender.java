@@ -1,17 +1,23 @@
 package com.scrat.imagewallpapersc;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.AsyncTask;
+import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.view.Display;
@@ -20,14 +26,18 @@ import android.view.Surface;
 import android.view.VelocityTracker;
 import android.view.WindowManager;
 
-import java.io.File;
+import androidx.documentfile.provider.DocumentFile;
+
+import java.io.FileDescriptor;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
-import java.util.Objects;
+import java.util.Arrays;
 import java.util.Random;
+import java.util.Set;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -39,18 +49,17 @@ class ImageWallpaperSCMediaTexture {
         PICTURE, VIDEO, NONE
     }
 
-    private int[] max;
-    private String filePath;
+    private final int[] max;
     private FileType fileType = FileType.NONE;
     private MediaPlayer mediaPlayer;
-    private int width;
-    private int height;
+    private final int width;
+    private final int height;
+    private int width_matrix;
     private SurfaceTexture mSurface;
     private int sp_Image;
     private float alpha;
-    private boolean error;
     private Bitmap mBitmap;
-    private int[] mTexture = new int[1];
+    private final int[] mTexture = new int[1];
     private float picturePosition;
 
     private float max_speed;
@@ -59,10 +68,9 @@ class ImageWallpaperSCMediaTexture {
     private float speed;
     private final int screenCount = 5;
     private Point mScreenSize;
-    private int indexLayer;
+    private final int indexLayer;
     private int touchType;
-    private int quality;
-
+    private final int quality;
 
     private FloatBuffer uvBuffer;
     private final float[] mtrxProjection = new float[16];
@@ -73,23 +81,31 @@ class ImageWallpaperSCMediaTexture {
     private final short[] indices = new short[]{0, 1, 2, 0, 2, 3};
     private int fragmentShader;
     private int vertexShader;
+    private final float mSpeedAnimation;
+    private float ScreenHeigthCenter;
 
-
-    ImageWallpaperSCMediaTexture(Context context, String fn, Point screenSize, int Quality, int[] maxTextureWidth, int layout, float speedAnimation, boolean blur, int LevelGausse, int touch) {
+    ImageWallpaperSCMediaTexture(Context context, Uri filePath, Point screenSize, int Quality, int[] maxTextureWidth, int layout, float speedAnimation, boolean blur, int LevelGausse, int touch) {
         int xo = 0;
         int yo = 0;
+        mSpeedAnimation = speedAnimation;
         alpha = 0f;
         max = maxTextureWidth;
-        error = false;
+        boolean error = false;
         mScreenSize = screenSize;
         indexLayer = layout;
         touchType = touch;
         quality = Quality;
-            prepareFile(fn);
+
+        String mime = context.getContentResolver().getType(filePath);
+        if (mime == null || mime.startsWith("image")) {
+            fileType = FileType.PICTURE;
+        } else if (mime.startsWith("video"))
+            fileType = FileType.VIDEO;
+
             if (fileType == FileType.VIDEO) {
-                mediaPlayer = new MediaPlayer();
-                try {
-                    mediaPlayer.setDataSource(filePath);
+               try {
+                    mediaPlayer = new MediaPlayer();
+                    mediaPlayer.setDataSource(context, filePath);
                     mediaPlayer.setLooping(true);
                     mediaPlayer.setVolume(0,0);
                     mediaPlayer.prepare();
@@ -97,14 +113,15 @@ class ImageWallpaperSCMediaTexture {
                     xo = mediaPlayer.getVideoWidth();
                     yo = mediaPlayer.getVideoHeight();
                     mediaPlayer.start();
-                 } catch (Exception e) {
+               } catch (Exception e) {
                     error = true;
                     fileType = FileType.PICTURE;
-                }
+               }
             }
             if (fileType == FileType.PICTURE) {
-                Bitmap bmp = !error ? decodeSampledBitmapFromResource(filePath, max[0] / Quality, max[0] / Quality):
-                             BitmapFactory.decodeResource(context.getResources(), R.drawable.home_wallpaper);
+                Bitmap bmp;
+                bmp = !error ? decodeSampledBitmapFromResource(context, filePath, max[0] / Quality, max[0] / Quality):
+                        BitmapFactory.decodeResource(context.getResources(), R.drawable.home_wallpaper);
                 mBitmap = Picture_Modified(bmp);
                 if (blur) {
                     try {
@@ -116,20 +133,12 @@ class ImageWallpaperSCMediaTexture {
                 xo = mBitmap.getWidth();
                 yo = mBitmap.getHeight();
             }
-            float d = (float) yo  / mScreenSize.y;
-            int x = (int) ((float) xo / d);
-            int y = mScreenSize.y;
-            if (x < mScreenSize.x) {
-                d = (float) xo / mScreenSize.x;
-                y = (int) ((float) yo / d);
-                x = mScreenSize.x;
-            }
-        max_speed = (x - mScreenSize.x) / (float) (screenCount - 1) / 20f;
-        width = x;
-        height = y;
+        //записываем размер матрицы равной размеру картинки
+        width = xo;
+        height = yo;
+
         Random random = new Random();
         vector = random.nextInt(2) != 0;
-        speed = ((width / (float) mScreenSize.x) -1) * speedAnimation;
         viewCreate();
     }
 
@@ -170,12 +179,12 @@ class ImageWallpaperSCMediaTexture {
         float[] uvs = new float[]{0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f};
         uvBuffer.put(uvs);
         uvBuffer.position(0);
+    }
 
-        for(int i = 0; i < mtrxProjectionAndView.length; i++) {
-            Matrix.orthoM(mtrxProjection, 0, 0f, mScreenSize.x, 0f, mScreenSize.y, 0, 50);
-            Matrix.setLookAtM(mtrxView, 0, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0.0f);
-            Matrix.multiplyMM(mtrxProjectionAndView, 0, mtrxProjection, 0, mtrxView, 0);
-        }
+    void viewRecreate(Point screenSize){
+        mScreenSize = screenSize;
+        SetupTriangle();
+        SetupCameraCenter();
     }
 
     private void createProgram(){
@@ -233,12 +242,30 @@ class ImageWallpaperSCMediaTexture {
     }
 
     void SetupTriangle() {
+
+        //скалим размер матрицы под размер экрана
+        float d = (float) height  / mScreenSize.y;
+        int x = (int) ((float) width / d);
+        int y = mScreenSize.y;
+
+        if (x < mScreenSize.x) {
+            d = (float) width / mScreenSize.x;
+            y = (int) ((float) height / d);
+            x = mScreenSize.x;
+        }
+
+        max_speed = (x - mScreenSize.x) / (float) (screenCount - 1) / 20f;
+        speed = ((x / (float) mScreenSize.x) -1) * mSpeedAnimation;
+        width_matrix = x;
+        ScreenHeigthCenter = ( (float) mScreenSize.y / 2) - (float) (y / 2);
+
         float[] vertices = new float[]
-                {0.0f, (float) getHeight(), 0.0f,
+                {0.0f, (float)  y, 0.0f,
                         0.0f, 0.0f, 0.0f,
-                        (float) getWidth(), 0.0f, 0.0f,
-                        (float) getWidth(),(float) getHeight(), 0.0f,
+                        (float) x, 0.0f, 0.0f,
+                        (float) x,(float)  y, 0.0f,
                 };
+
         // The vertex buffer.
         ByteBuffer bb = ByteBuffer.allocateDirect(vertices.length * 4);
         bb.order(ByteOrder.nativeOrder());
@@ -254,16 +281,18 @@ class ImageWallpaperSCMediaTexture {
         drawListBuffer.position(0);
     }
 
+
     void SetupCameraCenter(){
-        float CenterScreen = ( (float) mScreenSize.x / 2) - (float) (getWidth() / 2);
+        float CenterScreen = ( (float) mScreenSize.x / 2) - (float) (width_matrix / 2);
         picturePosition = 0;
         Matrix.orthoM(mtrxProjection, 0, 0f, mScreenSize.x, 0f, mScreenSize.y, 0, 50);
         Matrix.setLookAtM(mtrxView, 0, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0.0f);
         Matrix.multiplyMM(mtrxProjectionAndView, 0, mtrxProjection, 0, mtrxView, 0);
         matrixMove(CenterScreen);
+        ScreenHeigthCenter = 0; //Один раз переместили в сентр по вертикали, больше не надо.
     }
     private void matrixMove(float x) {
-        Matrix.translateM(mtrxView, 0, x, 0, 0);
+        Matrix.translateM(mtrxView, 0, x, ScreenHeigthCenter, 0);
         Matrix.multiplyMM(mtrxProjectionAndView, 0, mtrxProjection, 0, mtrxView, 0);
         picturePosition += x;
     }
@@ -274,14 +303,31 @@ class ImageWallpaperSCMediaTexture {
         }
     }
 
-    private Bitmap decodeSampledBitmapFromResource(String path, int reqWidth, int reqHeight) {
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(path, options);
-        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
-        options.inJustDecodeBounds = false;
-        return BitmapFactory.decodeFile(path, options);
+
+    private Bitmap decodeSampledBitmapFromResource(Context context, Uri uri, int reqWidth, int reqHeight) {
+        try {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            ParcelFileDescriptor parcelFileDescriptor =
+                    context.getContentResolver().openFileDescriptor(uri, "r"); //Error
+            FileDescriptor fileDescriptor = null;
+            if (parcelFileDescriptor != null) {
+                fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+            }
+            BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+
+            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+            options.inJustDecodeBounds = false;
+            Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+            if (parcelFileDescriptor != null) {
+                parcelFileDescriptor.close();
+            }
+            return image;
+        } catch (IOException e) {
+            return BitmapFactory.decodeResource(context.getResources(), R.drawable.home_wallpaper);
+        }
     }
+
 
     private int calculateInSampleSize(BitmapFactory.Options options,
                                       int reqWidth, int reqHeight) {
@@ -342,7 +388,7 @@ class ImageWallpaperSCMediaTexture {
     private void motion() {
         if (speed > 0) {
             if (vector) {
-                if ((picturePosition - speed) >= (mScreenSize.x - width)) {
+                if ((picturePosition - speed) >= (mScreenSize.x - width_matrix)) {
                     matrixMove(-speed);
                 } else {
                     vector = false;
@@ -359,8 +405,8 @@ class ImageWallpaperSCMediaTexture {
     private void touchMotion() {
         if (touchType>0) {
             if (motion_speed != 0) {
-                if ((picturePosition + motion_speed > (mScreenSize.x + ((float) width / 100)) - width)
-                        && ((picturePosition + motion_speed) < (0 - ((float) width / 100)))) {
+                if ((picturePosition + motion_speed > (mScreenSize.x + ((float) width_matrix / 100)) - width_matrix)
+                        && ((picturePosition + motion_speed) < (0 - ((float) width_matrix / 100)))) {
                     matrixMove(motion_speed);
                     if (motion_speed > 0) {
                         motion_speed = (float) (motion_speed - (Math.sqrt(Math.abs(motion_speed)) / screenCount));
@@ -375,11 +421,9 @@ class ImageWallpaperSCMediaTexture {
     }
 
     int getWidth(){
-        return width;
+        return width_matrix;
     }
-    int getHeight(){
-        return height;
-    }
+
     void release(){
         if (mediaPlayer!=null) {
             mediaPlayer.stop();
@@ -408,19 +452,6 @@ class ImageWallpaperSCMediaTexture {
     void onResume() {
         if (fileType == FileType.VIDEO) {
             if (mediaPlayer != null) mediaPlayer.start();
-        }
-    }
-    private void prepareFile(String fn){
-        if (new File(fn).exists()){
-            filePath = fn;
-            if (!filePath.endsWith(".mp4")) {
-                fileType = FileType.PICTURE;
-            } else {
-                fileType = FileType.VIDEO;
-            }
-        } else {
-            fileType = FileType.PICTURE;
-            error = true;
         }
     }
     void update(){
@@ -638,21 +669,22 @@ class ImageWallpaperSCMediaTexture {
 }
 
 
-public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
+class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
-    private ImageWallpaperSCMediaTexture[] mediaTextures = new ImageWallpaperSCMediaTexture[2];
+    private final ImageWallpaperSCMediaTexture[] mediaTextures = new ImageWallpaperSCMediaTexture[2];
     private int ActiveLayout = 0;
-    private int[] Action = new int[] {0, 0};           //Текущее действие для текстуры
+    private final int[] Action = new int[] {0, 0};           //Текущее действие для текстуры
     private VelocityTracker j;
     private float offsetX = 0f;
     private final Random random = new Random();
-    long TimeChange;
-    private Point mScreenSize = new Point();
-    private ArrayList<File> files = new ArrayList<>();
-    private final String[] ext = {".jpg", ".png", ".jpeg", ".bmp", ".gif", ".mp4"};
-    private Context mContext;
-    private String Path = "/";
-    int Timer = 20;
+    private long TimeChange;
+    private final Point mScreenSize = new Point();
+    private ArrayList<DocumentFile> files = new ArrayList<>();
+    private final Context mContext;
+    private String Path = "";
+    private Set<String> PathSet;
+    private int Mode = 0;
+    private int Timer = 20;
     private long TimeSet = 20 * 60000;
     private float SetSpeed = 0.2f;
     private int Quality = 2;
@@ -660,8 +692,9 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
     private boolean blur = false;
     private int touch = 2;
     private boolean VolumeEnable = false;
-    private int[] max = new int[1];
+    private final int[] max = new int[1];
     private String currentPathList; //Это нужно что бы при смене папки с файлами, при загрузке текстуры листинг обновить
+    private BroadcastReceiver receiver;
 
     ImageWallpaperSCRender(Context context) {
         mContext = context;
@@ -670,7 +703,11 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
         assert windowManager != null;
         Display display = windowManager.getDefaultDisplay();
         display.getRealSize(mScreenSize);
-        TimeChange = SystemClock.uptimeMillis(); //Время смены обновляем на текущее
+        TimeChange = SystemClock.elapsedRealtime(); //Время смены обновляем на текущее
+
+        IntentFilter filter = new IntentFilter("com.scrat.imagewallpapersc.UpdateDBForSaveFolder");
+        receiver = new UpdateReceiver();
+        context.registerReceiver(receiver, filter);
     }
 
     void onPause(){
@@ -683,10 +720,13 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
             if (mediaTextures[i]!=null) mediaTextures[i].onResume();
     }
 
+    void onDestroy(){
+        mContext.unregisterReceiver(receiver);
+    }
+
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glGetIntegerv(GL10.GL_MAX_TEXTURE_SIZE, max, 0); //put the maximum texture size in the array.
-
         GLES20.glClearColor(0f, 0f, 0f, 1f);
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_ALPHA);
@@ -698,7 +738,11 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         GLES20.glViewport(0, 0, width, height);
-        TimeSet = Timer * 60000;
+        mScreenSize.x = width;
+        mScreenSize.y = height;
+        for (int i = 0; i<2; i++)
+            if (mediaTextures[i]!=null) mediaTextures[i].viewRecreate(mScreenSize);
+
     }
 
     private void ProgramAnimate(int layer) {
@@ -711,9 +755,11 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
             case 1: //идет загузка текстуры
                 break;
             case 2:
-                if (mediaTextures[layer]!=null) mediaTextures[layer].texture();
-                mediaTextures[layer].SetupTriangle();
-                mediaTextures[layer].SetupCameraCenter();
+                if (mediaTextures[layer]!=null) {
+                    mediaTextures[layer].texture();
+                    mediaTextures[layer].SetupTriangle();
+                    mediaTextures[layer].SetupCameraCenter();
+                }
                 Action[layer]++;
             case 3: //текстура загружена, слой подготовлен
                 if (mediaTextures[layer]!=null) {
@@ -731,8 +777,8 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
         ProgramAnimate(ActiveLayout);
 
         int InactiveLayout = ActiveLayout==0?1:0;
-        if (Timer > 0 && (SystemClock.uptimeMillis() - TimeChange) >= TimeSet) { //Пришло время менять картинку
-            ProgramAnimate(InactiveLayout);                         //Запускаем загрузку невидимого слоя
+        if (Timer > 0 && (SystemClock.elapsedRealtime() - TimeChange) >= TimeSet) { //Пришло время менять картинку
+            if ((Mode == 1 && PathSet.size()>1) || Mode == 2)  ProgramAnimate(InactiveLayout);                         //Запускаем загрузку невидимого слоя
         }
 
         //Поскольку после загрузки невидимого слоя время смены обновится, нужно дальше отрисовывать его по action 3
@@ -755,7 +801,6 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
                 ActiveLayout = InactiveLayout;
             }
         }
-
     }
 
         void onOffsetsChanged(float xOffset) {
@@ -799,47 +844,61 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
 
     @SuppressLint("StaticFieldLeak")
     private class LoadTexture extends AsyncTask<Integer, Void, Void> {
-        int currentTexture;
+        final int currentTexture;
 
         LoadTexture(int layer) {
             currentTexture = layer;
         }
 
-        private ArrayList<File> listFilesWithFolders(String folder) {
-            ArrayList<File> files = new ArrayList<>();
-            try {
-                File dir = new File(folder);
-                for (File file : Objects.requireNonNull(dir.listFiles()))
-                    if (!file.isDirectory()) {
-                        for (String ext_t : ext) {
-                            if (file.getName().toUpperCase().endsWith(ext_t.toUpperCase())) {
-                                files.add(file);
-                                break;
-                            }
-                        }
-                    }
-            } catch (Exception ignored) {
+        private ArrayList<DocumentFile> listFilesWithFolders(Uri folder) { //NullPointerException
+            ArrayList<DocumentFile> files = new ArrayList<>();
+            if (folder.isAbsolute()) {
+                DocumentFile documentsTree = DocumentFile.fromTreeUri(mContext, folder);
 
+                if (documentsTree != null) {
+                    files = new ArrayList<>(Arrays.asList(documentsTree.listFiles()));
+                }
             }
-            currentPathList = folder;
+            currentPathList = folder.toString();
             return files;
+        }
+
+        private ArrayList<DocumentFile> listFilesWithMulti(Set<String> pathSet) { //NullPointerException
+            ArrayList<DocumentFile> documentFiles = new ArrayList<>();
+            for(String path : pathSet){
+                Uri file = Uri.parse(path);
+                if (file.isAbsolute()) {
+                    documentFiles.add(DocumentFile.fromSingleUri(mContext, file));
+                }
+            }
+            currentPathList = pathSet.toString();
+            return documentFiles;
         }
 
         @Override
         protected Void doInBackground(Integer... params) {
-            if (files.size() == 0) files = listFilesWithFolders(Path);
-            if (!currentPathList.equals(Path)) files = listFilesWithFolders(Path);
-            String FileName;
+            if (files.size() == 0 || !currentPathList.equals(Path)) {
+                if (Mode == 2) files = listFilesWithFolders(Uri.parse(Path));
+                if (Mode == 1) files = listFilesWithMulti(PathSet);
+            }
+            Uri FileName = Uri.parse("");
             int fileNum;
-            boolean fileExists;
-            if (files.size()>0) {
+            boolean fileCorrect = false;
+            if (files.size() > 0) {
                 do {
                     fileNum = random.nextInt(files.size());
-                    FileName = Path + files.get(fileNum).getName();
+                    DocumentFile file = files.get(fileNum);
                     files.remove(fileNum);
-                    fileExists = new File(FileName).exists();
-                } while (!fileExists && files.size() > 0);
-            } else FileName = "";
+                    if (!file.isDirectory()) {
+                        String mime = mContext.getContentResolver().getType(file.getUri());
+                        if (mime!=null && (mime.startsWith("image") || mime.startsWith("video"))) {
+                            fileCorrect = true;
+                            FileName = file.getUri();
+                        }
+                    }
+                }
+                while (!fileCorrect && files.size() > 0);
+            }
             if (mediaTextures[currentTexture] != null) {
                 mediaTextures[currentTexture].release();
                 mediaTextures[currentTexture] = null;
@@ -849,22 +908,31 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
         }
 
         @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-        }
-
-        @Override
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
-            TimeChange = SystemClock.uptimeMillis(); //Время смены обновляем на текущее
+            TimeChange = SystemClock.elapsedRealtime(); //Время смены обновляем на текущее
             Action[currentTexture]++; //Ставим следующее действие
         }
+    }
 
+    void change(){
+        TimeChange = SystemClock.elapsedRealtime(); //Что бы 2 раза не сменилось случайно, по 2 тапу и по времени
+        ProgramAnimate(ActiveLayout==0?1:0);
     }
 
     void loadParam(Context mContext) {
-        Path = PreferenceManager.getDefaultSharedPreferences(mContext).getString("directory","/");
+        SharedPreferences settings = mContext.getSharedPreferences("Settings", Context.MODE_PRIVATE);
+        if(settings.contains("mode")) {
+            Mode = settings.getInt("mode", 0);
+            if(Mode == 2 && settings.contains("directory")) {
+                Path = settings.getString("directory", "");
+            }
+            if(Mode == 1 && settings.contains("multi")) {
+                PathSet = settings.getStringSet("multi", null);
+                if (PathSet!=null) Path = PathSet.toString(); else Path = "";
+            }
+        }
+
         blur = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("blur",false);
         Timer = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("duration","20"));
         TimeSet = Timer * 60000;
@@ -877,6 +945,12 @@ public class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTe
         for (int i=0; i<2; i++) if (mediaTextures[i] != null) mediaTextures[i].setParam(touch, SetSpeed);
     }
 
-
+    private class UpdateReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            loadParam(context);
+            change();
+        }
+    }
 
 }
