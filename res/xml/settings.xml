@@ -3,13 +3,19 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:title="@string/settings_title">
     <PreferenceCategory android:title="@string/settings_dir" android:layout="@layout/gr_p_l"/>
-    <EditTextPreference
+    <Preference
+        android:key="multi"
+        android:layout="@layout/im_p_l"
+        android:icon="@drawable/ic_fil"
+        android:title="@string/select_photo_multi"
+        android:summary="" />
+    <Preference
         android:key="directory"
         android:layout="@layout/im_p_l"
         android:icon="@drawable/ic_dir"
         android:title="@string/select_dir"
-        android:summary="@string/select_dir_summary"
-        android:defaultValue="/" />
+        android:summary="" />
+
     <PreferenceCategory android:title="@string/settings" android:layout="@layout/gr_p_l"/>
     <ListPreference
         android:key="quality"
@@ -44,19 +50,20 @@
         android:entryValues="@array/touch_values"/>
     <PreferenceCategory android:title="@string/filter" android:layout="@layout/gr_p_l" />
     <SwitchPreference
-        android:key="sound"
+        android:defaultValue="false"
+        android:disableDependentsState="false"
         android:icon="@drawable/ic_snd"
+        android:key="sound"
         android:layout="@layout/sw_p_l"
-        android:title="@string/sound"
         android:summary="@string/sound_summary"
-        android:defaultValue="false"/>
+        android:title="@string/sound" />
     <SwitchPreference
-        android:key="blur"
+        android:defaultValue="false"
         android:icon="@drawable/ic_blr"
+        android:key="blur"
         android:layout="@layout/sw_p_l"
-        android:title="@string/blur"
         android:summary="@string/blur_summary"
-        android:defaultValue="false"/>
+        android:title="@string/blur" />
     <ListPreference
         android:key="blur_level"
         android:layout="@layout/sc_p_l"

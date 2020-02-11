@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/colorGroup"
+    android:background="?android:attr/colorPrimary"
     android:minHeight="32dp"
     android:orientation="vertical">
 
@@ -18,7 +18,7 @@
         android:paddingEnd="10dp"
         android:paddingStart="15dp"
         android:paddingTop="5dp"
-        android:textColor="@color/colorGroupText"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="12sp" />
 
     <View style="@style/divider" />

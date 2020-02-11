@@ -4,7 +4,6 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ConfigurationInfo;
 import android.opengl.GLSurfaceView;
-import android.os.SystemClock;
 import android.service.wallpaper.WallpaperService;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -39,6 +38,7 @@ abstract class OpenGLES2WallpaperService extends ImageWallpaperSC {
                 setRenderer(getNewRenderer(getContext()));
             }
         }
+
     }
     abstract GLSurfaceView.Renderer getNewRenderer(Context context);
 }
@@ -52,14 +52,13 @@ abstract class ImageWallpaperSC extends WallpaperService {
             WallpaperGLSurfaceView(Context context) {
                 super(context);
                 gestureDetector = new GestureDetector(context, new GestureListener());
-
             }
             @Override
             public SurfaceHolder getHolder() {
                 return getSurfaceHolder();
             }
 
-            public void onDestroy() {
+            void onDestroy() {
                 super.onDetachedFromWindow();
             }
         }
@@ -97,8 +96,11 @@ abstract class ImageWallpaperSC extends WallpaperService {
 
         @Override
         public void onDestroy() {
-            super.onDestroy();
-            glSurfaceView.onDestroy();
+            try {
+                super.onDestroy(); //NullPointerException
+                glSurfaceView.onDestroy();
+                mRender.onDestroy();
+            } catch (Exception ignore) {}
         }
 
         void setRenderer(GLSurfaceView.Renderer renderer) {
@@ -139,11 +141,13 @@ abstract class ImageWallpaperSC extends WallpaperService {
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 mRender.loadParam(getContext());
-                long now = SystemClock.uptimeMillis();
-                mRender.TimeChange = now - (mRender.Timer * 60000);
+                mRender.change();
                 return true;
             }
         }
+
     }
+
+
 
 }
