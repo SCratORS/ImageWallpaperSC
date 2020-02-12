@@ -73,4 +73,11 @@
         android:defaultValue="5"
         android:entries="@array/blur_title"
         android:entryValues="@array/blur_values"/>
+    <SwitchPreference
+        android:defaultValue="true"
+        android:icon="@drawable/ic_launcher"
+        android:key="icon_hide"
+        android:layout="@layout/sw_p_l"
+        android:summary="@string/show_icon_summary"
+        android:title="@string/show_icon" />
 </PreferenceScreen>
