@@ -1,5 +1,5 @@
 # ImageWallpaperSC
-Free android LiveWallpapers. Creating a slide show from folder. Pictures and videos files.
+Free android LiveWallpapers. Creating a slide show from folder or selected files. Pictures and videos files supported.
 
 # Private Police
 ## Terms & Privacy
@@ -33,8 +33,7 @@ Unique application numbers: Certain services include a unique application number
 
 ## Android Permissions
 
-READ EXTERNAL STORAGE
-    - This permission is required for the application to read image and video files located in the folder specified in the application settings.
+This application does not use any permissions. To access media files, system media providers are used.
 
 ## Privacy Policy Changes:
 
