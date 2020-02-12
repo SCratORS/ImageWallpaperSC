@@ -1,8 +1,7 @@
 package com.scrat.imagewallpapersc;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.ClipData;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -13,13 +12,13 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.preference.SwitchPreference;
 import android.view.MenuItem;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@SuppressLint("ExportedPreferenceActivity")
 public class ImageWallpaperSCSettings extends PreferenceActivity
         implements SharedPreferences.OnSharedPreferenceChangeListener{
     private final int OPEN_DIRECTORY_REQUEST_CODE = 0xf11e;
@@ -27,19 +26,12 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if  (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-        }
-
         addPreferencesFromResource(R.xml.settings);
-
         android.app.ActionBar actionbar;
         actionbar = getActionBar();
         if (actionbar != null) {
             actionbar.setDisplayHomeAsUpEnabled(true);
         }
-
         PreferenceManager.getDefaultSharedPreferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
 
@@ -189,6 +181,14 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
             EditTextPreference etp = (EditTextPreference) pref;
             if (key.equals("duration")) {
                 etp.setSummary(etp.getText() + " " + getResources().getString(R.string.min));
+            }
+        }
+        if (pref instanceof SwitchPreference) {
+            SwitchPreference swp = (SwitchPreference) pref;
+            if (key.equals("icon_hide")) {
+                PackageManager pkg = getPackageManager();
+                ComponentName componentName = new ComponentName(this, ImageWallpaperSCSetWallpaper.class);
+                pkg.setComponentEnabledSetting(componentName, swp.isChecked()?PackageManager.COMPONENT_ENABLED_STATE_ENABLED:PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
             }
         }
         if (pref instanceof ListPreference) {
