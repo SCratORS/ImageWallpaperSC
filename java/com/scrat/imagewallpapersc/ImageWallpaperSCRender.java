@@ -29,7 +29,6 @@ import android.view.WindowManager;
 import androidx.documentfile.provider.DocumentFile;
 
 import java.io.FileDescriptor;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -323,7 +322,7 @@ class ImageWallpaperSCMediaTexture {
                 parcelFileDescriptor.close();
             }
             return image;
-        } catch (IOException e) {
+        } catch (Exception e) {
             return BitmapFactory.decodeResource(context.getResources(), R.drawable.home_wallpaper);
         }
     }
@@ -917,7 +916,8 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
 
     void change(){
         TimeChange = SystemClock.elapsedRealtime(); //Что бы 2 раза не сменилось случайно, по 2 тапу и по времени
-        ProgramAnimate(ActiveLayout==0?1:0);
+        int layer = ActiveLayout==0?1:0;
+        if (Action[layer]==0) ProgramAnimate(layer);
     }
 
     void loadParam(Context mContext) {

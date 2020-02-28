@@ -2,9 +2,8 @@
     <string name="app_name">Фоновый рисунок со слайд-шоу</string>
     <string name="wallpaper_label">Слайд-шоу</string>
     <string name="wallpaper_description">Смотреть все фотографии в альбоме.</string>
-    <string name="show_icon">Отображать иконку</string>
-    <string name="show_icon_summary">Отобразить/Скрыть иконку в лаунчере</string>
     <string name="settings_title">Настройки</string>
+    <string name="apply_walls">Установить обои</string>
     <string name="select_dir">Альбом в Галерее</string>
     <string name="select_photo_multi">Фотографии из Галереи</string>
     <string name="duration">Продолжительность показа</string>
