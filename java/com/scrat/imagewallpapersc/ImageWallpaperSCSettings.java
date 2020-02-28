@@ -1,10 +1,10 @@
 package com.scrat.imagewallpapersc;
 
+import android.app.WallpaperManager;
 import android.content.ClipData;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
@@ -12,7 +12,6 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.preference.SwitchPreference;
 import android.view.MenuItem;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -47,8 +46,20 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 return true;
             }
         });
+        findPreference("apply").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                applyWalls();
+                return true;
+            }
+        });
     }
-
+    private void applyWalls() {
+        Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
+        intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                new ComponentName(this, ImageWallpaperSCService.class));
+        startActivity(intent);
+        finish();
+    }
     private void openDirectory() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |  Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -76,15 +87,15 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
         if (resultCode == RESULT_OK) {
             SharedPreferences.Editor settings = getSharedPreferences("Settings", MODE_PRIVATE).edit();
             if (requestCode == OPEN_DIRECTORY_REQUEST_CODE) {
-
                 Uri directoryUri = imageReturnedIntent.getData();
-                assert directoryUri != null;
-                getContentResolver().takePersistableUriPermission(
-                        directoryUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                );
-                settings.putString("directory", directoryUri.toString());
-                settings.putInt("mode", 2);
+                if (directoryUri != null) {
+                    getContentResolver().takePersistableUriPermission(
+                            directoryUri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    );
+                    settings.putString("directory", directoryUri.toString());
+                    settings.putInt("mode", 2);
+                } else settings.putInt("mode", 0);
                 settings.apply();
             }
             if (requestCode == OPEN_MULTIPLE_REQUEST_CODE) {
@@ -99,7 +110,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 settings.apply();
             }
             sendBroadcast(new Intent("com.scrat.imagewallpapersc.UpdateDBForSaveFolder"));
-            finish();
         }
     }
 
@@ -181,14 +191,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
             EditTextPreference etp = (EditTextPreference) pref;
             if (key.equals("duration")) {
                 etp.setSummary(etp.getText() + " " + getResources().getString(R.string.min));
-            }
-        }
-        if (pref instanceof SwitchPreference) {
-            SwitchPreference swp = (SwitchPreference) pref;
-            if (key.equals("icon_hide")) {
-                PackageManager pkg = getPackageManager();
-                ComponentName componentName = new ComponentName(this, ImageWallpaperSCSetWallpaper.class);
-                pkg.setComponentEnabledSetting(componentName, swp.isChecked()?PackageManager.COMPONENT_ENABLED_STATE_ENABLED:PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
             }
         }
         if (pref instanceof ListPreference) {

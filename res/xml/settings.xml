@@ -2,24 +2,26 @@
 <PreferenceScreen 
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:title="@string/settings_title">
-    <PreferenceCategory android:title="@string/settings_dir" android:layout="@layout/gr_p_l"/>
+    <Preference
+        android:key="apply"
+        android:icon="@drawable/ic_apl"
+        android:title="@string/apply_walls"
+        android:summary="" />
+    <PreferenceCategory android:title="@string/settings_dir" />
     <Preference
         android:key="multi"
-        android:layout="@layout/im_p_l"
         android:icon="@drawable/ic_fil"
         android:title="@string/select_photo_multi"
         android:summary="" />
     <Preference
         android:key="directory"
-        android:layout="@layout/im_p_l"
         android:icon="@drawable/ic_dir"
         android:title="@string/select_dir"
         android:summary="" />
 
-    <PreferenceCategory android:title="@string/settings" android:layout="@layout/gr_p_l"/>
+    <PreferenceCategory android:title="@string/settings"/>
     <ListPreference
         android:key="quality"
-        android:layout="@layout/sc_p_l"
         android:title="@string/quality"
         android:summary="@string/quality_high"
         android:defaultValue="2"
@@ -27,14 +29,12 @@
         android:entryValues="@array/quality_values"/>
     <EditTextPreference
         android:key="duration"
-        android:layout="@layout/sc_p_l"
         android:title="@string/duration"
         android:summary="20 мин."
         android:inputType="number"
         android:defaultValue="20" />
     <ListPreference
         android:key="speed"
-        android:layout="@layout/sc_p_l"
         android:title="@string/speed"
         android:summary="@string/speed_normal"
         android:defaultValue="0.5"
@@ -42,42 +42,31 @@
         android:entryValues="@array/speed_values"/>
     <ListPreference
         android:key="touch"
-        android:layout="@layout/sc_p_l"
         android:title="@string/touch"
         android:summary="@string/touch_parallax"
         android:defaultValue="2"
         android:entries="@array/touch_title"
         android:entryValues="@array/touch_values"/>
-    <PreferenceCategory android:title="@string/filter" android:layout="@layout/gr_p_l" />
+    <PreferenceCategory android:title="@string/filter" />
     <SwitchPreference
         android:defaultValue="false"
         android:disableDependentsState="false"
         android:icon="@drawable/ic_snd"
         android:key="sound"
-        android:layout="@layout/sw_p_l"
         android:summary="@string/sound_summary"
         android:title="@string/sound" />
     <SwitchPreference
         android:defaultValue="false"
         android:icon="@drawable/ic_blr"
         android:key="blur"
-        android:layout="@layout/sw_p_l"
         android:summary="@string/blur_summary"
         android:title="@string/blur" />
     <ListPreference
         android:key="blur_level"
-        android:layout="@layout/sc_p_l"
         android:dependency="blur"
         android:title="@string/blur_setting"
         android:summary="@string/blur_normal"
         android:defaultValue="5"
         android:entries="@array/blur_title"
         android:entryValues="@array/blur_values"/>
-    <SwitchPreference
-        android:defaultValue="true"
-        android:icon="@drawable/ic_launcher"
-        android:key="icon_hide"
-        android:layout="@layout/sw_p_l"
-        android:summary="@string/show_icon_summary"
-        android:title="@string/show_icon" />
 </PreferenceScreen>
