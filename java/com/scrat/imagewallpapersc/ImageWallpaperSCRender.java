@@ -689,6 +689,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     private int Quality = 2;
     private int LevelGausse = 2;
     private boolean blur = false;
+    private boolean double_tap = true;
     private int touch = 2;
     private boolean VolumeEnable = false;
     private final int[] max = new int[1];
@@ -914,6 +915,9 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         }
     }
 
+    boolean getDoubleTapSetting(){
+        return double_tap;
+    }
     void change(){
         TimeChange = SystemClock.elapsedRealtime(); //Что бы 2 раза не сменилось случайно, по 2 тапу и по времени
         int layer = ActiveLayout==0?1:0;
@@ -934,6 +938,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         }
 
         blur = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("blur",false);
+        double_tap = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("double_tap",true);
         Timer = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("duration","20"));
         TimeSet = Timer * 60000;
         touch = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("touch","2"));
