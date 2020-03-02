@@ -3,7 +3,7 @@
 ImageWallpaperSC - live wallpaper in the style of "Slideshow". All images and videos from the selected directory will be randomly displayed on the screen and gradually scroll left and right and change smoothly. You can scroll the wallpaper with your finger left and right. Double tapping the screen changes the image.
 
 # Private Police
-# Terms & Privacy
+## Terms & Privacy
 
 ImageWallpaperSC is a free app. This service is provided by {SCrat_ORS} at no cost and is intended for use as is.
 
@@ -21,22 +21,22 @@ By the applicable law within or outside your country of residence, legal process
 By requests from public and governmental authorities
 To protect our legal rights and interests.
 
-# Non-Personal Information:
+## Non-Personal Information:
 
 We may collect and use non-personal information in the following circumstances. To have a better understanding in user’s behavior, solve problems in products and services, improve our products, services and advertising, we may collect non-personal information such as installed application name and package name.
 
 If non-personal information is combined with personal information, we treat the combined information as personal information for the purposes of this Privacy Policy.
 
-# Information we get from your use of our services:
+## Information we get from your use of our services:
 
 Device information: Device-specific information such as your hardware model and operating system version
 Unique application numbers: Certain services include a unique application number. This number and information about your installation (for example, the operating system type and application version number)
 
-# Android Permissions
+## Android Permissions
 
 Permissions not requested.
 
-# Privacy Policy Changes:
+## Privacy Policy Changes:
 
 Our Privacy Policy may change from time to time, we will post any privacy policy changes on this page, so please review it periodically.
 Contact Us:
