@@ -34,4 +34,6 @@
     <string name="touch_parallax">Параллакс эффект</string>
     <string name="touch_offset">Смещение</string>
     <string name="touch_off">Отключено</string>
+    <string name="double_tap">Двойной тап по экрану</string>
+    <string name="double_tap_summary">Смена изображения</string>
 </resources>
