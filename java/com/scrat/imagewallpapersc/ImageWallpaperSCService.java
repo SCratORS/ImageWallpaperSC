@@ -141,7 +141,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 mRender.loadParam(getContext());
-                mRender.change();
+                if (mRender.getDoubleTapSetting()) mRender.change();
                 return true;
             }
         }
