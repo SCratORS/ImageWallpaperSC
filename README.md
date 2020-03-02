@@ -7,9 +7,9 @@ ImageWallpaperSC - live wallpaper in the style of "Slideshow". All images and vi
 
 ImageWallpaperSC is a free app. This service is provided by {SCrat_ORS} at no cost and is intended for use as is.
 
-This page is used to inform regarding our policies with the collection, use, and disclosure of information if anyone decided to use our Service.
+This page is used to inform regarding our policies with the collection, use, and disclosure of information if anyone decided to use our Application.
 
-If you choose to use our Service, then you agree to the collection and use of information in relation with this policy. We will not collect any personal information in this app as described in this Privacy Policy.
+If you choose to use our Application, then you agree to the collection and use of information in relation with this policy. We will not collect any personal information in this app as described in this Privacy Policy.
 Personal Information
 
 We do not collect, store or use any personal information while you install or upgrade our products.
