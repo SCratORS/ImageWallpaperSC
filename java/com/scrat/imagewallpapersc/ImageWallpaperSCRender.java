@@ -47,7 +47,7 @@ class ImageWallpaperSCMediaTexture {
     protected enum FileType {
         PICTURE, VIDEO, NONE
     }
-
+    boolean ErrorLoad;
     private final int[] max;
     private FileType fileType = FileType.NONE;
     private MediaPlayer mediaPlayer;
@@ -63,6 +63,7 @@ class ImageWallpaperSCMediaTexture {
 
     private float max_speed;
     private float motion_speed;
+    private float titl_val = 0;
     private boolean vector;
     private float speed;
     private final int screenCount = 5;
@@ -94,6 +95,7 @@ class ImageWallpaperSCMediaTexture {
         indexLayer = layout;
         touchType = touch;
         quality = Quality;
+        ErrorLoad = false;
 
         String mime = context.getContentResolver().getType(filePath);
         if (mime == null || mime.startsWith("image")) {
@@ -121,24 +123,30 @@ class ImageWallpaperSCMediaTexture {
                 Bitmap bmp;
                 bmp = !error ? decodeSampledBitmapFromResource(context, filePath, max[0] / Quality, max[0] / Quality):
                         BitmapFactory.decodeResource(context.getResources(), R.drawable.home_wallpaper);
-                mBitmap = Picture_Modified(bmp);
-                if (blur) {
-                    try {
-                        doBlur(LevelGausse);
-                    } catch (Exception ignored) {
+                try {
+                    mBitmap = Picture_Modified(bmp); //<-- тут выскакивает null pointer на in_bmp.getWidth(); Вероятно связано с невозможностью загрузить картинку или еще какой гадостью
+                    if (blur) {
+                        try {
+                            doBlur(LevelGausse);
+                        } catch (Exception ignored) {
 
+                        }
                     }
+                    xo = mBitmap.getWidth();
+                    yo = mBitmap.getHeight();
+                } catch (Exception e) {
+                    ErrorLoad = true;
                 }
-                xo = mBitmap.getWidth();
-                yo = mBitmap.getHeight();
             }
         //записываем размер матрицы равной размеру картинки
         width = xo;
         height = yo;
 
-        Random random = new Random();
-        vector = random.nextInt(2) != 0;
-        viewCreate();
+        if (!ErrorLoad) {
+            Random random = new Random();
+            vector = random.nextInt(2) != 0;
+            viewCreate();
+        }
     }
 
     void setParam(int touch, float speedAnimation){
@@ -384,6 +392,15 @@ class ImageWallpaperSCMediaTexture {
         GLES20.glFinish();
     }
 
+    private void titl_motion(){
+        float value = speed * 5;
+        if (value == 0) value = 0.5f;
+        value = 0 - titl_val * value;
+        if ((picturePosition + value >= mScreenSize.x - width_matrix) && (picturePosition + value <= 0)) {
+            matrixMove(value);
+        }
+    }
+
     private void motion() {
         if (speed > 0) {
             if (vector) {
@@ -450,7 +467,15 @@ class ImageWallpaperSCMediaTexture {
     }
     void onResume() {
         if (fileType == FileType.VIDEO) {
-            if (mediaPlayer != null) mediaPlayer.start();
+            if (mediaPlayer != null) {
+                try {
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                } catch (Exception ignore) {
+
+                }
+
+            }
         }
     }
     void update(){
@@ -458,6 +483,7 @@ class ImageWallpaperSCMediaTexture {
         if (alpha > 1.0f) alpha = 1f;
         updateTexImage();
         if (motion_speed != 0) {touchMotion();} else {motion();}
+        titl_motion();
     }
     float getAlpha(){
         return alpha;
@@ -465,6 +491,11 @@ class ImageWallpaperSCMediaTexture {
     void setMoutionSpeed(float speed){
         motion_speed = speed;
     }
+
+    void setTitlValue(float y){
+        titl_val = y;
+    }
+
     float getMaxSpeed(){
         return max_speed;
     }
@@ -689,6 +720,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     private int Quality = 2;
     private int LevelGausse = 2;
     private boolean blur = false;
+    private boolean titl = false;
     private boolean double_tap = true;
     private int touch = 2;
     private boolean VolumeEnable = false;
@@ -704,7 +736,6 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         Display display = windowManager.getDefaultDisplay();
         display.getRealSize(mScreenSize);
         TimeChange = SystemClock.elapsedRealtime(); //Время смены обновляем на текущее
-
         IntentFilter filter = new IntentFilter("com.scrat.imagewallpapersc.UpdateDBForSaveFolder");
         receiver = new UpdateReceiver();
         context.registerReceiver(receiver, filter);
@@ -811,6 +842,13 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
             }
         }
 
+        void Sensor_Event(float y_value) {
+            if (titl) {
+                for (int i = 0; i < 2; i++)
+                    if (mediaTextures[i]!=null) mediaTextures[i].setTitlValue(y_value);
+            }
+        }
+
         void onTouchEvent(MotionEvent motionEvent) {
             if (touch == 1) {
                 int action = motionEvent.getActionMasked();
@@ -851,10 +889,10 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         }
 
         private ArrayList<DocumentFile> listFilesWithFolders(Uri folder) { //NullPointerException
+            mContext.getContentResolver().takePersistableUriPermission(folder, Intent.FLAG_GRANT_READ_URI_PERMISSION);
             ArrayList<DocumentFile> files = new ArrayList<>();
             if (folder.isAbsolute()) {
                 DocumentFile documentsTree = DocumentFile.fromTreeUri(mContext, folder);
-
                 if (documentsTree != null) {
                     files = new ArrayList<>(Arrays.asList(documentsTree.listFiles()));
                 }
@@ -868,6 +906,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
             for(String path : pathSet){
                 Uri file = Uri.parse(path);
                 if (file.isAbsolute()) {
+                    mContext.getContentResolver().takePersistableUriPermission(file, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     documentFiles.add(DocumentFile.fromSingleUri(mContext, file));
                 }
             }
@@ -878,8 +917,12 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         @Override
         protected Void doInBackground(Integer... params) {
             if (files.size() == 0 || !currentPathList.equals(Path)) {
-                if (Mode == 2) files = listFilesWithFolders(Uri.parse(Path));
-                if (Mode == 1) files = listFilesWithMulti(PathSet);
+                int circleLoad = 10000;
+                do {
+                    circleLoad--;
+                    if (Mode == 2) files = listFilesWithFolders(Uri.parse(Path));
+                    if (Mode == 1) files = listFilesWithMulti(PathSet);
+                } while (files.size() == 0 && circleLoad > 0);
             }
             Uri FileName = Uri.parse("");
             int fileNum;
@@ -910,14 +953,33 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         @Override
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
-            TimeChange = SystemClock.elapsedRealtime(); //Время смены обновляем на текущее
-            Action[currentTexture]++; //Ставим следующее действие
+            if (!mediaTextures[currentTexture].ErrorLoad) {
+                TimeChange = SystemClock.elapsedRealtime(); //Время смены обновляем на текущее
+                Action[currentTexture]++; //Ставим следующее действие
+            } else {
+                Action[currentTexture] = 0;
+            }
         }
     }
 
     boolean getDoubleTapSetting(){
         return double_tap;
     }
+
+    boolean getTitlSetting(){
+        return titl;
+    }
+
+    private int StrToIntDef(String s) {
+        int result;
+        try {
+            result = Integer.parseInt(s);
+        } catch(Exception e) {
+            result = 0;
+        }
+        return result;
+    }
+
     void change(){
         TimeChange = SystemClock.elapsedRealtime(); //Что бы 2 раза не сменилось случайно, по 2 тапу и по времени
         int layer = ActiveLayout==0?1:0;
@@ -939,15 +1001,19 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
 
         blur = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("blur",false);
         double_tap = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("double_tap",true);
-        Timer = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("duration","20"));
+        Timer = StrToIntDef(PreferenceManager.getDefaultSharedPreferences(mContext).getString("duration","20"));
         TimeSet = Timer * 60000;
         touch = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("touch","2"));
+        titl = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("titl",false);
         SetSpeed = Float.parseFloat(PreferenceManager.getDefaultSharedPreferences(mContext).getString("speed","0.5"));
         Quality = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("quality","2"));
         LevelGausse = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("blur_level","5"));
         VolumeEnable = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("sound",false);
 
-        for (int i=0; i<2; i++) if (mediaTextures[i] != null) mediaTextures[i].setParam(touch, SetSpeed);
+        for (int i=0; i<2; i++) if (mediaTextures[i] != null) {
+            if (!titl) mediaTextures[i].setTitlValue(0);
+            mediaTextures[i].setParam(touch, SetSpeed);
+        }
     }
 
     private class UpdateReceiver extends BroadcastReceiver {

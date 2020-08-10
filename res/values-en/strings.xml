@@ -40,4 +40,5 @@
     <string name="activity_error">Can\'t open system settings</string>
     <string name="titl_action">Tilt action</string>
     <string name="titl_action_summary">Parallax effect (Gyroscope)</string>
+    titl_action_summary
 </resources>

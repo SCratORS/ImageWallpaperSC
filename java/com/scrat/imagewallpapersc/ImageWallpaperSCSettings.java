@@ -13,6 +13,8 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
+import android.widget.Toast;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
@@ -25,6 +27,7 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         addPreferencesFromResource(R.xml.settings);
         android.app.ActionBar actionbar;
         actionbar = getActionBar();
@@ -52,13 +55,26 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 return true;
             }
         });
+
+
     }
     private void applyWalls() {
-        Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
-        intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                new ComponentName(this, ImageWallpaperSCService.class));
-        startActivity(intent);
-        finish();
+        try {
+            Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
+            intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                    new ComponentName(this, ImageWallpaperSCService.class));
+            startActivity(intent);
+            finish();
+        }
+        catch (android.content.ActivityNotFoundException e3){
+            try {
+                Intent intent = new Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER);
+                startActivity(intent);
+                finish();
+            } catch (android.content.ActivityNotFoundException e2){
+               Toast.makeText(this, getResources().getString(R.string.activity_error), Toast.LENGTH_SHORT).show();
+            }
+        }
     }
     private void openDirectory() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
@@ -102,8 +118,16 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 ArrayList<String> listUri = new ArrayList<>();
                 ClipData clipData = imageReturnedIntent.getClipData();
                 if (clipData!=null)
-                for (int i = 0; i < clipData.getItemCount(); i++) listUri.add(clipData.getItemAt(i).getUri().toString());
-                else listUri.add(Objects.requireNonNull(imageReturnedIntent.getData()).toString());
+                for (int i = 0; i < clipData.getItemCount(); i++) {
+                    Uri fileUri = clipData.getItemAt(i).getUri();
+                    getContentResolver().takePersistableUriPermission(fileUri,Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    listUri.add(fileUri.toString());
+                }
+                else {
+                    Uri fileUri = imageReturnedIntent.getData();
+                    getContentResolver().takePersistableUriPermission(Objects.requireNonNull(fileUri),Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    listUri.add(Objects.requireNonNull(fileUri).toString());
+                }
                 Set<String> arraySet = new HashSet<>(listUri);
                 settings.putStringSet("multi", arraySet);
                 settings.putInt("mode", 1);
@@ -124,7 +148,8 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
     public void onResume() {
         super.onResume();
         EditTextPreference duration = (EditTextPreference) findPreference("duration");
-        duration.setSummary(duration.getText() +" "+ getResources().getString(R.string.min));
+        if (duration.getText().equals("") || duration.getText().equals("0")) duration.setSummary(getResources().getString(R.string.Infinitely)); else
+            duration.setSummary(duration.getText() + " " + getResources().getString(R.string.min));
         String[] Speed_value = getResources().getStringArray(R.array.speed_values);
         ListPreference SpeedSetting = (ListPreference) findPreference("speed");
         if (SpeedSetting.getValue().equals(Speed_value[0])) {
@@ -151,8 +176,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
         if (TouchSetting.getValue().equals(touch_value[0])) {
             TouchSetting.setSummary(getResources().getString(R.string.touch_parallax));
         }
-
-
         ListPreference QualitySetting = (ListPreference) findPreference("quality");
         String[] Quality_value = getResources().getStringArray(R.array.quality_values);
         if (QualitySetting.getValue().equals(Quality_value[0])) {
@@ -190,6 +213,7 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
         if (pref instanceof EditTextPreference) {
             EditTextPreference etp = (EditTextPreference) pref;
             if (key.equals("duration")) {
+                if (etp.getText().equals("") || etp.getText().equals("0")) etp.setSummary(getResources().getString(R.string.Infinitely)); else
                 etp.setSummary(etp.getText() + " " + getResources().getString(R.string.min));
             }
         }

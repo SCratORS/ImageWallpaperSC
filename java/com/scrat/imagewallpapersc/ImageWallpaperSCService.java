@@ -3,6 +3,10 @@ package com.scrat.imagewallpapersc;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ConfigurationInfo;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.service.wallpaper.WallpaperService;
 import android.view.GestureDetector;
@@ -46,13 +50,46 @@ abstract class OpenGLES2WallpaperService extends ImageWallpaperSC {
 abstract class ImageWallpaperSC extends WallpaperService {
 
     private GestureDetector gestureDetector;
+    private SensorManager mSensorManager;
+    private Sensor mGyroscope;
 
-    public class GLEngine extends Engine {
+    public class GLEngine extends Engine implements SensorEventListener {
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            if (event.sensor.getType() != Sensor.TYPE_GYROSCOPE)
+                return;
+            mRender.Sensor_Event(event.values[1]);
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+
+        void createSensor(Context context) {
+            mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+            if (mSensorManager != null) {
+                mGyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+                mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_UI);
+            }
+        }
+        void destroySensor(){
+            try {
+                if (mSensorManager != null) mSensorManager.unregisterListener(this);
+            } catch (Exception ignore){
+
+            }
+            mSensorManager = null;
+            mGyroscope = null;
+        }
+
         class WallpaperGLSurfaceView extends GLSurfaceView {
             WallpaperGLSurfaceView(Context context) {
                 super(context);
                 gestureDetector = new GestureDetector(context, new GestureListener());
             }
+
             @Override
             public SurfaceHolder getHolder() {
                 return getSurfaceHolder();
@@ -77,15 +114,19 @@ abstract class ImageWallpaperSC extends WallpaperService {
             glSurfaceView = new WallpaperGLSurfaceView(getContext());
         }
 
+
+
         @Override
         public void onVisibilityChanged(boolean visible) {
             if (rendererHasBeenSet) {
                 if (visible) {
                     mRender.loadParam(getContext());
+                    if (mRender.getTitlSetting()) createSensor(getContext());
                     glSurfaceView.onResume();
                     gestureDetector = new GestureDetector(getContext(), new GestureListener());
                     mRender.onResume();
                 } else {
+                    destroySensor();
                     glSurfaceView.onPause();
                     gestureDetector = null;
                     mRender.onPause();
@@ -99,6 +140,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
             try {
                 super.onDestroy(); //NullPointerException
                 glSurfaceView.onDestroy();
+                destroySensor();
                 mRender.onDestroy();
             } catch (Exception ignore) {}
         }
@@ -141,6 +183,11 @@ abstract class ImageWallpaperSC extends WallpaperService {
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 mRender.loadParam(getContext());
+
+                if (mRender.getTitlSetting()) {
+                    if (mSensorManager == null) createSensor(getContext());
+                } else if (mSensorManager != null) destroySensor();
+
                 if (mRender.getDoubleTapSetting()) mRender.change();
                 return true;
             }

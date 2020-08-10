@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="DeviceDefaultNoDevider" parent="@android:style/Theme.DeviceDefault.Settings">
+        <item name="android:listDivider">@null</item>
+        <item name="android:iconSpaceReserved" tools:targetApi="o">true</item>
+    </style>
+</resources>
