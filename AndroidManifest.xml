@@ -12,12 +12,11 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/DeviceDefaultNoDevider"
+        android:theme="@style/DeviceDefaultNoDivider"
         tools:ignore="GoogleAppIndexingWarning">
         <activity
-            android:label="@string/app_name"
-            android:exported="true"
-            android:name=".ImageWallpaperSCSettings">
+            android:name=".ImageWallpaperSCSettings"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

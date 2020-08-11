@@ -12,12 +12,12 @@
         android:key="multi"
         android:icon="@drawable/ic_fil"
         android:title="@string/select_photo_multi"
-        android:summary="" />
+        android:summary="@string/select_photo_multi_summary" />
     <Preference
         android:key="directory"
         android:icon="@drawable/ic_dir"
         android:title="@string/select_dir"
-        android:summary="" />
+        android:summary="@string/select_dir_summary" />
 
     <PreferenceCategory android:title="@string/settings"/>
     <ListPreference
@@ -49,9 +49,9 @@
         android:entryValues="@array/touch_values"/>
     <SwitchPreference
         android:defaultValue="false"
-        android:key="titl"
-        android:title="@string/titl_action"
-        android:summary="@string/titl_action_summary" />
+        android:key="tilt"
+        android:title="@string/tilt_action"
+        android:summary="@string/tilt_action_summary" />
     <SwitchPreference
         android:defaultValue="true"
         android:key="double_tap"
@@ -65,18 +65,4 @@
         android:key="sound"
         android:summary="@string/sound_summary"
         android:title="@string/sound" />
-    <SwitchPreference
-        android:defaultValue="false"
-        android:icon="@drawable/ic_blr"
-        android:key="blur"
-        android:summary="@string/blur_summary"
-        android:title="@string/blur" />
-    <ListPreference
-        android:key="blur_level"
-        android:dependency="blur"
-        android:title="@string/blur_setting"
-        android:summary="@string/blur_normal"
-        android:defaultValue="5"
-        android:entries="@array/blur_title"
-        android:entryValues="@array/blur_values"/>
 </PreferenceScreen>

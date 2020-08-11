@@ -1,11 +1,11 @@
 <resources>
     <string name="app_name">Slideshow Wallpaper</string>
     <string name="wallpaper_label">Slideshow</string>
-    <string name="wallpaper_description">Swith between your album images</string>
+    <string name="wallpaper_description">Switch between your album images</string>
     <string name="settings_title">Settings</string>
     <string name="apply_walls">Set wallpaper</string>
     <string name="select_dir">Gallery folder</string>
-    <string name="select_photo_multi">Gallery images</string>
+    <string name="select_photo_multi">Gallery images/videos</string>
     <string name="duration">Wallpaper update frequency</string>
     <string name="Infinitely">Infinitely</string>
     <string name="min">min</string>
@@ -24,13 +24,6 @@
     <string name="filter">Effects</string>
     <string name="sound">Sound</string>
     <string name="sound_summary">Play sound in video</string>
-    <string name="blur">Blur effect</string>
-    <string name="blur_summary">Gaussian blur</string>
-    <string name="blur_setting">Effect strength</string>
-    <string name="blur_low">Low blur</string>
-    <string name="blur_normal">Medium blur</string>
-    <string name="blur_high">High blur</string>
-    <string name="blur_ultra">Ultra blur</string>
     <string name="touch">Swipe action</string>
     <string name="touch_parallax">Parallax effect</string>
     <string name="touch_offset">Scroll effect</string>
@@ -38,6 +31,8 @@
     <string name="double_tap">Double tap action</string>
     <string name="double_tap_summary">Change wallpaper</string>
     <string name="activity_error">Can\'t open system settings</string>
-    <string name="titl_action">Tilt action</string>
-    <string name="titl_action_summary">Parallax effect (Gyroscope)</string>
+    <string name="tilt_action">Tilt action</string>
+    <string name="tilt_action_summary">Parallax effect (Gyroscope)</string>
+    <string name="select_photo_multi_summary">Selecting single or more files in the gallery</string>
+    <string name="select_dir_summary">Selecting single folder</string>
 </resources>

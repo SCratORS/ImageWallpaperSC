@@ -191,20 +191,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
             QualitySetting.setSummary(getResources().getString(R.string.quality_low));
         }
 
-        ListPreference BlurSetting = (ListPreference) findPreference("blur_level");
-        String[] Blur_value = getResources().getStringArray(R.array.blur_values);
-        if (BlurSetting.getValue().equals(Blur_value[0])) {
-            BlurSetting.setSummary(getResources().getString(R.string.blur_low));
-        }
-        if (BlurSetting.getValue().equals(Blur_value[1])) {
-            BlurSetting.setSummary(getResources().getString(R.string.blur_normal));
-        }
-        if (BlurSetting.getValue().equals(Blur_value[2])) {
-            BlurSetting.setSummary(getResources().getString(R.string.blur_high));
-        }
-        if (BlurSetting.getValue().equals(Blur_value[3])) {
-            BlurSetting.setSummary(getResources().getString(R.string.blur_ultra));
-        }
     }
 
     @Override
@@ -259,22 +245,6 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 }
                 if (ltp.getValue().equals(Quality_value[3])) {
                     ltp.setSummary(getResources().getString(R.string.quality_low));
-                }
-            }
-
-            if (key.equals("blur_level")) {
-                String[] Blur_value = getResources().getStringArray(R.array.blur_values);
-                if (ltp.getValue().equals(Blur_value[0])) {
-                    ltp.setSummary(getResources().getString(R.string.blur_low));
-                }
-                if (ltp.getValue().equals(Blur_value[1])) {
-                    ltp.setSummary(getResources().getString(R.string.blur_normal));
-                }
-                if (ltp.getValue().equals(Blur_value[2])) {
-                    ltp.setSummary(getResources().getString(R.string.blur_high));
-                }
-                if (ltp.getValue().equals(Blur_value[3])) {
-                    ltp.setSummary(getResources().getString(R.string.blur_ultra));
                 }
             }
         }
