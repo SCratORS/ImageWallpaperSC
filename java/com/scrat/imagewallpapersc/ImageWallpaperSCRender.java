@@ -35,6 +35,7 @@ import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -63,28 +64,27 @@ class ImageWallpaperSCMediaTexture {
 
     private float max_speed;
     private float motion_speed;
-    private float titl_val = 0;
+    private float tilt_val = 0;
     private boolean vector;
     private float speed;
     private final int screenCount = 5;
     private Point mScreenSize;
     private final int indexLayer;
     private int touchType;
-    private final int quality;
 
     private FloatBuffer uvBuffer;
-    private final float[] mtrxProjection = new float[16];
-    private final float[] mtrxView = new float[16];
-    private final float[] mtrxProjectionAndView = new float[16];
+    private final float[] matrixProjection = new float[16];
+    private final float[] matrixView = new float[16];
+    private final float[] matrixProjectionAndView = new float[16];
     private FloatBuffer vertexBuffer;
     private ShortBuffer drawListBuffer;
     private final short[] indices = new short[]{0, 1, 2, 0, 2, 3};
     private int fragmentShader;
     private int vertexShader;
     private final float mSpeedAnimation;
-    private float ScreenHeigthCenter;
+    private float ScreenHeightCenter;
 
-    ImageWallpaperSCMediaTexture(Context context, Uri filePath, Point screenSize, int Quality, int[] maxTextureWidth, int layout, float speedAnimation, boolean blur, int LevelGausse, int touch) {
+    ImageWallpaperSCMediaTexture(Context context, Uri filePath, Point screenSize, int Quality, int[] maxTextureWidth, int layout, float speedAnimation, int touch) {
         int xo = 0;
         int yo = 0;
         mSpeedAnimation = speedAnimation;
@@ -94,7 +94,6 @@ class ImageWallpaperSCMediaTexture {
         mScreenSize = screenSize;
         indexLayer = layout;
         touchType = touch;
-        quality = Quality;
         ErrorLoad = false;
 
         String mime = context.getContentResolver().getType(filePath);
@@ -115,8 +114,8 @@ class ImageWallpaperSCMediaTexture {
                     yo = mediaPlayer.getVideoHeight();
                     mediaPlayer.start();
                } catch (Exception e) {
-                    error = true;
-                    fileType = FileType.PICTURE;
+                   error = true;
+                   fileType = FileType.PICTURE;
                }
             }
             if (fileType == FileType.PICTURE) {
@@ -125,13 +124,6 @@ class ImageWallpaperSCMediaTexture {
                         BitmapFactory.decodeResource(context.getResources(), R.drawable.home_wallpaper);
                 try {
                     mBitmap = Picture_Modified(bmp); //<-- тут выскакивает null pointer на in_bmp.getWidth(); Вероятно связано с невозможностью загрузить картинку или еще какой гадостью
-                    if (blur) {
-                        try {
-                            doBlur(LevelGausse);
-                        } catch (Exception ignored) {
-
-                        }
-                    }
                     xo = mBitmap.getWidth();
                     yo = mBitmap.getHeight();
                 } catch (Exception e) {
@@ -197,11 +189,11 @@ class ImageWallpaperSCMediaTexture {
     private void createProgram(){
         String vs_Image = "uniform mat4 uMVPMatrix;" +
                 "attribute vec4 vPosition;" +
-                "attribute vec2 a_texCoord;" +
-                "varying vec2 v_texCoord;" +
+                "attribute vec2 a_texCord;" +
+                "varying vec2 v_texCord;" +
                 "void main() {" +
                 "  gl_Position = uMVPMatrix * vPosition;" +
-                "  v_texCoord = a_texCoord;" +
+                "  v_texCord = a_texCord;" +
                 "}";
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vs_Image);
 
@@ -209,11 +201,11 @@ class ImageWallpaperSCMediaTexture {
         if (fileType == FileType.PICTURE) {
             fs_Image =
                     "precision mediump float;" +
-                            "varying vec2 v_texCoord;" +
+                            "varying vec2 v_texCord;" +
                             "uniform sampler2D s_texture;" +
                             "uniform float uAlpha;" +
                             "void main() {" +
-                            "  vec4 textureColor = texture2D(s_texture, v_texCoord);" +
+                            "  vec4 textureColor = texture2D(s_texture, v_texCord);" +
                             "  textureColor.a = uAlpha;" +
                             "  gl_FragColor = textureColor;" +
                             "}";
@@ -223,11 +215,11 @@ class ImageWallpaperSCMediaTexture {
             fs_Image =
                     "#extension GL_OES_EGL_image_external : require\n" +
                             "precision mediump float;" +
-                            "varying vec2 v_texCoord;" +
+                            "varying vec2 v_texCord;" +
                             "uniform samplerExternalOES s_texture;" +
                             "uniform float uAlpha;" +
                             "void main() {" +
-                            "  vec4 textureColor = texture2D(s_texture, v_texCoord);" +
+                            "  vec4 textureColor = texture2D(s_texture, v_texCord);" +
                             "  textureColor.a = uAlpha;" +
                             "  gl_FragColor = textureColor;" +
                             "}";
@@ -264,7 +256,7 @@ class ImageWallpaperSCMediaTexture {
         max_speed = (x - mScreenSize.x) / (float) (screenCount - 1) / 20f;
         speed = ((x / (float) mScreenSize.x) -1) * mSpeedAnimation;
         width_matrix = x;
-        ScreenHeigthCenter = ( (float) mScreenSize.y / 2) - (float) (y / 2);
+        ScreenHeightCenter = ( (float) mScreenSize.y / 2) - (float) (y / 2);
 
         float[] vertices = new float[]
                 {0.0f, (float)  y, 0.0f,
@@ -292,15 +284,15 @@ class ImageWallpaperSCMediaTexture {
     void SetupCameraCenter(){
         float CenterScreen = ( (float) mScreenSize.x / 2) - (float) (width_matrix / 2);
         picturePosition = 0;
-        Matrix.orthoM(mtrxProjection, 0, 0f, mScreenSize.x, 0f, mScreenSize.y, 0, 50);
-        Matrix.setLookAtM(mtrxView, 0, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0.0f);
-        Matrix.multiplyMM(mtrxProjectionAndView, 0, mtrxProjection, 0, mtrxView, 0);
+        Matrix.orthoM(matrixProjection, 0, 0f, mScreenSize.x, 0f, mScreenSize.y, 0, 50);
+        Matrix.setLookAtM(matrixView, 0, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0.0f);
+        Matrix.multiplyMM(matrixProjectionAndView, 0, matrixProjection, 0, matrixView, 0);
         matrixMove(CenterScreen);
-        ScreenHeigthCenter = 0; //Один раз переместили в сентр по вертикали, больше не надо.
+        ScreenHeightCenter = 0; //Один раз переместили в сентр по вертикали, больше не надо.
     }
     private void matrixMove(float x) {
-        Matrix.translateM(mtrxView, 0, x, ScreenHeigthCenter, 0);
-        Matrix.multiplyMM(mtrxProjectionAndView, 0, mtrxProjection, 0, mtrxView, 0);
+        Matrix.translateM(matrixView, 0, x, ScreenHeightCenter, 0);
+        Matrix.multiplyMM(matrixProjectionAndView, 0, matrixProjection, 0, matrixView, 0);
         picturePosition += x;
     }
 
@@ -374,11 +366,11 @@ class ImageWallpaperSCMediaTexture {
         int mPositionHandle = GLES20.glGetAttribLocation(sp_Image, "vPosition");
         GLES20.glEnableVertexAttribArray(mPositionHandle);
         GLES20.glVertexAttribPointer(mPositionHandle, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
-        int mTexCoordLoc = GLES20.glGetAttribLocation(sp_Image, "a_texCoord" );
-        GLES20.glEnableVertexAttribArray ( mTexCoordLoc );
-        GLES20.glVertexAttribPointer ( mTexCoordLoc, 2, GLES20.GL_FLOAT, false,	0, uvBuffer);
-        int mtrxhandle = GLES20.glGetUniformLocation(sp_Image, "uMVPMatrix");
-        GLES20.glUniformMatrix4fv(mtrxhandle, 1, false, mtrxProjectionAndView, 0);
+        int mTexCordLoc = GLES20.glGetAttribLocation(sp_Image, "a_texCord" );
+        GLES20.glEnableVertexAttribArray ( mTexCordLoc );
+        GLES20.glVertexAttribPointer ( mTexCordLoc, 2, GLES20.GL_FLOAT, false,	0, uvBuffer);
+        int matrixHandle = GLES20.glGetUniformLocation(sp_Image, "uMVPMatrix");
+        GLES20.glUniformMatrix4fv(matrixHandle, 1, false, matrixProjectionAndView, 0);
 
         int mSamplerLoc = GLES20.glGetUniformLocation (sp_Image, "s_texture" );
         GLES20.glUniform1i (mSamplerLoc, indexLayer);
@@ -387,15 +379,15 @@ class ImageWallpaperSCMediaTexture {
         GLES20.glUniform1f(a, getAlpha());
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indices.length, GLES20.GL_UNSIGNED_SHORT, drawListBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
-        GLES20.glDisableVertexAttribArray(mTexCoordLoc);
+        GLES20.glDisableVertexAttribArray(mTexCordLoc);
 
         GLES20.glFinish();
     }
 
-    private void titl_motion(){
+    private void tilt_motion(){
         float value = speed * 5;
         if (value == 0) value = 0.5f;
-        value = 0 - titl_val * value;
+        value = 0 - tilt_val * value;
         if ((picturePosition + value >= mScreenSize.x - width_matrix) && (picturePosition + value <= 0)) {
             matrixMove(value);
         }
@@ -468,13 +460,7 @@ class ImageWallpaperSCMediaTexture {
     void onResume() {
         if (fileType == FileType.VIDEO) {
             if (mediaPlayer != null) {
-                try {
-                    mediaPlayer.prepare();
                     mediaPlayer.start();
-                } catch (Exception ignore) {
-
-                }
-
             }
         }
     }
@@ -483,218 +469,21 @@ class ImageWallpaperSCMediaTexture {
         if (alpha > 1.0f) alpha = 1f;
         updateTexImage();
         if (motion_speed != 0) {touchMotion();} else {motion();}
-        titl_motion();
+        tilt_motion();
     }
     float getAlpha(){
         return alpha;
     }
-    void setMoutionSpeed(float speed){
+    void setMotionSpeed(float speed){
         motion_speed = speed;
     }
 
-    void setTitlValue(float y){
-        titl_val = y;
+    void setTiltValue(float y){
+        tilt_val = y;
     }
 
     float getMaxSpeed(){
         return max_speed;
-    }
-    private void doBlur(int radius) {
-
-        Bitmap bitmap = Bitmap.createScaledBitmap(mBitmap, mBitmap.getWidth()/quality+1, mBitmap.getHeight()/quality+1, true);
-
-        int w = bitmap.getWidth();
-        int h = bitmap.getHeight();
-        int [] pix = new int[w * h];
-
-        bitmap.getPixels(pix, 0, w, 0, 0, w, h);
-
-        int wm = w - 1;
-        int hm = h - 1;
-        int wh = w * h;
-        int div = radius + radius + 1;
-
-        int[] g = new int[wh];
-        int[] b = new int[wh];
-        int rsum, gsum, bsum, x, y, i, p, yp, yi, yw;
-        int[] vmin = new int[Math.max(w, h)];
-
-        int divsum = (div + 1) >> 1;
-        divsum *= divsum;
-        int[] dv = new int[256 * divsum];
-        for (i = 0; i < 256 * divsum; i++) {
-            dv[i] = (i / divsum);
-        }
-
-        yw = yi = 0;
-
-        int[][] stack = new int[div][3];
-        int stackpointer;
-        int stackstart;
-        int[] sir;
-        int rbs;
-        int r1 = radius + 1;
-        int routsum, goutsum, boutsum;
-        int rinsum, ginsum, binsum;
-
-        int[] r = new int[wh];
-        for (y = 0; y < h; y++) {
-            rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
-            for (i = -radius; i <= radius; i++) {
-                p = pix[yi + Math.min(wm, Math.max(i, 0))];
-                sir = stack[i + radius];
-                sir[0] = (p & 0xff0000) >> 16;
-                sir[1] = (p & 0x00ff00) >> 8;
-                sir[2] = (p & 0x0000ff);
-                rbs = r1 - Math.abs(i);
-                rsum += sir[0] * rbs;
-                gsum += sir[1] * rbs;
-                bsum += sir[2] * rbs;
-                if (i > 0) {
-                    rinsum += sir[0];
-                    ginsum += sir[1];
-                    binsum += sir[2];
-                } else {
-                    routsum += sir[0];
-                    goutsum += sir[1];
-                    boutsum += sir[2];
-                }
-            }
-            stackpointer = radius;
-
-            for (x = 0; x < w; x++) {
-
-                r[yi] = dv[rsum];
-                g[yi] = dv[gsum];
-                b[yi] = dv[bsum];
-
-                rsum -= routsum;
-                gsum -= goutsum;
-                bsum -= boutsum;
-
-                stackstart = stackpointer - radius + div;
-                sir = stack[stackstart % div];
-
-                routsum -= sir[0];
-                goutsum -= sir[1];
-                boutsum -= sir[2];
-
-                if (y == 0) {
-                    vmin[x] = Math.min(x + radius + 1, wm);
-                }
-                p = pix[yw + vmin[x]];
-
-                sir[0] = (p & 0xff0000) >> 16;
-                sir[1] = (p & 0x00ff00) >> 8;
-                sir[2] = (p & 0x0000ff);
-
-                rinsum += sir[0];
-                ginsum += sir[1];
-                binsum += sir[2];
-
-                rsum += rinsum;
-                gsum += ginsum;
-                bsum += binsum;
-
-                stackpointer = (stackpointer + 1) % div;
-                sir = stack[(stackpointer) % div];
-
-                routsum += sir[0];
-                goutsum += sir[1];
-                boutsum += sir[2];
-
-                rinsum -= sir[0];
-                ginsum -= sir[1];
-                binsum -= sir[2];
-
-                yi++;
-            }
-            yw += w;
-        }
-        for (x = 0; x < w; x++) {
-            rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
-            yp = -radius * w;
-            for (i = -radius; i <= radius; i++) {
-                yi = Math.max(0, yp) + x;
-
-                sir = stack[i + radius];
-
-                sir[0] = r[yi];
-                sir[1] = g[yi];
-                sir[2] = b[yi];
-
-                rbs = r1 - Math.abs(i);
-
-                rsum += r[yi] * rbs;
-                gsum += g[yi] * rbs;
-                bsum += b[yi] * rbs;
-
-                if (i > 0) {
-                    rinsum += sir[0];
-                    ginsum += sir[1];
-                    binsum += sir[2];
-                } else {
-                    routsum += sir[0];
-                    goutsum += sir[1];
-                    boutsum += sir[2];
-                }
-
-                if (i < hm) {
-                    yp += w;
-                }
-            }
-            yi = x;
-            stackpointer = radius;
-            for (y = 0; y < h; y++) {
-                // Preserve alpha channel: ( 0xff000000 & pix[yi] )
-                pix[yi] = (0xff000000 & pix[yi]) | (dv[rsum] << 16) | (dv[gsum] << 8) | dv[bsum];
-
-                rsum -= routsum;
-                gsum -= goutsum;
-                bsum -= boutsum;
-
-                stackstart = stackpointer - radius + div;
-                sir = stack[stackstart % div];
-
-                routsum -= sir[0];
-                goutsum -= sir[1];
-                boutsum -= sir[2];
-
-                if (x == 0) {
-                    vmin[y] = Math.min(y + r1, hm) * w;
-                }
-                p = x + vmin[y];
-
-                sir[0] = r[p];
-                sir[1] = g[p];
-                sir[2] = b[p];
-
-                rinsum += sir[0];
-                ginsum += sir[1];
-                binsum += sir[2];
-
-                rsum += rinsum;
-                gsum += ginsum;
-                bsum += binsum;
-
-                stackpointer = (stackpointer + 1) % div;
-                sir = stack[stackpointer];
-
-                routsum += sir[0];
-                goutsum += sir[1];
-                boutsum += sir[2];
-
-                rinsum -= sir[0];
-                ginsum -= sir[1];
-                binsum -= sir[2];
-
-                yi += w;
-            }
-        }
-
-        bitmap.setPixels(pix, 0, w, 0, 0, w, h);
-        mBitmap = bitmap.copy(bitmap.getConfig(), true);
-        bitmap.recycle();
     }
 }
 
@@ -718,9 +507,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     private long TimeSet = 20 * 60000;
     private float SetSpeed = 0.2f;
     private int Quality = 2;
-    private int LevelGausse = 2;
-    private boolean blur = false;
-    private boolean titl = false;
+    private boolean tilt = false;
     private boolean double_tap = true;
     private int touch = 2;
     private boolean VolumeEnable = false;
@@ -747,8 +534,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     }
 
     void onResume(){
-        for (int i = 0; i<2; i++)
-            if (mediaTextures[i]!=null) mediaTextures[i].onResume();
+            if (mediaTextures[ActiveLayout]!=null) mediaTextures[ActiveLayout].onResume();
     }
 
     void onDestroy(){
@@ -837,15 +623,15 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         void onOffsetsChanged(float xOffset) {
             if (touch == 2) {
                 for (int i = 0; i < 2; i++)
-                    if (mediaTextures[i]!=null) mediaTextures[i].setMoutionSpeed((mediaTextures[i].getWidth() - mScreenSize.x) * (offsetX - xOffset));
+                    if (mediaTextures[i]!=null) mediaTextures[i].setMotionSpeed((mediaTextures[i].getWidth() - mScreenSize.x) * (offsetX - xOffset));
                 offsetX = xOffset;
             }
         }
 
         void Sensor_Event(float y_value) {
-            if (titl) {
+            if (tilt) {
                 for (int i = 0; i < 2; i++)
-                    if (mediaTextures[i]!=null) mediaTextures[i].setTitlValue(y_value);
+                    if (mediaTextures[i]!=null) mediaTextures[i].setTiltValue(y_value);
             }
         }
 
@@ -866,7 +652,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
                         for (int i = 0; i < 2; i++) {
                             if (mediaTextures[i]!=null) {
                                 j.computeCurrentVelocity((int) mediaTextures[i].getMaxSpeed(), mediaTextures[i].getMaxSpeed());
-                                mediaTextures[i].setMoutionSpeed(j.getXVelocity());
+                                mediaTextures[i].setMotionSpeed(j.getXVelocity());
                             }
                         }
                         break;
@@ -946,7 +732,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
                 mediaTextures[currentTexture].release();
                 mediaTextures[currentTexture] = null;
             }
-            mediaTextures[currentTexture] = new ImageWallpaperSCMediaTexture(mContext, FileName, mScreenSize, Quality, max, currentTexture, SetSpeed, blur, LevelGausse, touch);
+            mediaTextures[currentTexture] = new ImageWallpaperSCMediaTexture(mContext, FileName, mScreenSize, Quality, max, currentTexture, SetSpeed, touch);
             return null;
         }
 
@@ -965,9 +751,8 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     boolean getDoubleTapSetting(){
         return double_tap;
     }
-
-    boolean getTitlSetting(){
-        return titl;
+    boolean getTiltSetting(){
+        return tilt;
     }
 
     private int StrToIntDef(String s) {
@@ -999,19 +784,17 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
             }
         }
 
-        blur = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("blur",false);
         double_tap = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("double_tap",true);
         Timer = StrToIntDef(PreferenceManager.getDefaultSharedPreferences(mContext).getString("duration","20"));
         TimeSet = Timer * 60000;
-        touch = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("touch","2"));
-        titl = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("titl",false);
-        SetSpeed = Float.parseFloat(PreferenceManager.getDefaultSharedPreferences(mContext).getString("speed","0.5"));
-        Quality = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("quality","2"));
-        LevelGausse = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(mContext).getString("blur_level","5"));
+        touch = Integer.parseInt(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("touch", "2")));
+        tilt = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("tilt",false);
+        SetSpeed = Float.parseFloat(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("speed", "0.5")));
+        Quality = Integer.parseInt(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("quality", "2")));
         VolumeEnable = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("sound",false);
 
         for (int i=0; i<2; i++) if (mediaTextures[i] != null) {
-            if (!titl) mediaTextures[i].setTitlValue(0);
+            if (!tilt) mediaTextures[i].setTiltValue(0);
             mediaTextures[i].setParam(touch, SetSpeed);
         }
     }

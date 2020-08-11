@@ -121,7 +121,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
             if (rendererHasBeenSet) {
                 if (visible) {
                     mRender.loadParam(getContext());
-                    if (mRender.getTitlSetting()) createSensor(getContext());
+                    if (mRender.getTiltSetting()) createSensor(getContext());
                     glSurfaceView.onResume();
                     gestureDetector = new GestureDetector(getContext(), new GestureListener());
                     mRender.onResume();
@@ -184,7 +184,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
             public boolean onDoubleTap(MotionEvent e) {
                 mRender.loadParam(getContext());
 
-                if (mRender.getTitlSetting()) {
+                if (mRender.getTiltSetting()) {
                     if (mSensorManager == null) createSensor(getContext());
                 } else if (mSensorManager != null) destroySensor();
 
