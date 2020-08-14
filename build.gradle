@@ -6,8 +6,8 @@ android {
         applicationId "com.scrat.imagewallpapersc"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 14
-        versionName "2.1.9"
+        versionCode 16
+        versionName "2.1.92"
     }
     buildTypes {
         release {

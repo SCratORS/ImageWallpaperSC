@@ -21,7 +21,6 @@
     <string name="quality_normal">Medium</string>
     <string name="quality_low">Low</string>
     <string name="quality">Image quality</string>
-    <string name="filter">Effects</string>
     <string name="sound">Sound</string>
     <string name="sound_summary">Play sound in video</string>
     <string name="touch">Swipe action</string>
@@ -31,8 +30,16 @@
     <string name="double_tap">Double tap action</string>
     <string name="double_tap_summary">Change wallpaper</string>
     <string name="activity_error">Can\'t open system settings</string>
-    <string name="tilt_action">Tilt action</string>
-    <string name="tilt_action_summary">Parallax effect (Gyroscope)</string>
+    <string name="tilt_action">Parallax tilt effect (Gyroscope)</string>
     <string name="select_photo_multi_summary">Selecting single or more files in the gallery</string>
     <string name="select_dir_summary">Selecting single folder</string>
+    <string name="tilt_off">Disable</string>
+    <string name="tilt_low">Low</string>
+    <string name="tilt_normal">Normal</string>
+    <string name="tilt_high">High</string>
+    <string name="scale">Scale (Percent)</string>
+    <string name="scale_100">Original</string>
+    <string name="scale_120">Increased by 20 percent</string>
+    <string name="scale_150">Increased by 50 percent</string>
+    <string name="scale_200">Increased by 100 percent</string>
 </resources>

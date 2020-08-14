@@ -165,6 +165,21 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
             SpeedSetting.setSummary(getResources().getString(R.string.speed_off));
         }
 
+        String[] Scale_value = getResources().getStringArray(R.array.scale_values);
+        ListPreference ScaleSetting = (ListPreference) findPreference("scale");
+        if (ScaleSetting.getValue().equals(Scale_value[0])) {
+            ScaleSetting.setSummary(getResources().getString(R.string.scale_100));
+        }
+        if (ScaleSetting.getValue().equals(Scale_value[1])) {
+            ScaleSetting.setSummary(getResources().getString(R.string.scale_120));
+        }
+        if (ScaleSetting.getValue().equals(Scale_value[2])) {
+            ScaleSetting.setSummary(getResources().getString(R.string.scale_150));
+        }
+        if (ScaleSetting.getValue().equals(Scale_value[3])) {
+            ScaleSetting.setSummary(getResources().getString(R.string.scale_200));
+        }
+
         String[] touch_value = getResources().getStringArray(R.array.touch_values);
         ListPreference TouchSetting = (ListPreference) findPreference("touch");
         if (TouchSetting.getValue().equals(touch_value[2])) {
@@ -190,7 +205,20 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
         if (QualitySetting.getValue().equals(Quality_value[3])) {
             QualitySetting.setSummary(getResources().getString(R.string.quality_low));
         }
-
+        ListPreference TiltSetting = (ListPreference) findPreference("tilt");
+        String[] Tilt_value = getResources().getStringArray(R.array.tilt_values);
+        if (TiltSetting.getValue().equals(Tilt_value[0])) {
+            TiltSetting.setSummary(getResources().getString(R.string.tilt_high));
+        }
+        if (TiltSetting.getValue().equals(Tilt_value[1])) {
+            TiltSetting.setSummary(getResources().getString(R.string.tilt_normal));
+        }
+        if (TiltSetting.getValue().equals(Tilt_value[2])) {
+            TiltSetting.setSummary(getResources().getString(R.string.tilt_low));
+        }
+        if (TiltSetting.getValue().equals(Tilt_value[3])) {
+            TiltSetting.setSummary(getResources().getString(R.string.tilt_off));
+        }
     }
 
     @Override
@@ -220,6 +248,21 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                     ltp.setSummary(getResources().getString(R.string.speed_off));
                 }
             }
+            if (key.equals("scale")) {
+                String[] Scale_value = getResources().getStringArray(R.array.scale_values);
+                if (ltp.getValue().equals(Scale_value[0])) {
+                    ltp.setSummary(getResources().getString(R.string.scale_100));
+                }
+                if (ltp.getValue().equals(Scale_value[1])) {
+                    ltp.setSummary(getResources().getString(R.string.scale_120));
+                }
+                if (ltp.getValue().equals(Scale_value[2])) {
+                    ltp.setSummary(getResources().getString(R.string.scale_150));
+                }
+                if (ltp.getValue().equals(Scale_value[3])) {
+                    ltp.setSummary(getResources().getString(R.string.scale_200));
+                }
+            }
             if (key.equals("touch")) {
                 String[] touch_value = getResources().getStringArray(R.array.touch_values);
                 if (ltp.getValue().equals(touch_value[2])) {
@@ -245,6 +288,21 @@ public class ImageWallpaperSCSettings extends PreferenceActivity
                 }
                 if (ltp.getValue().equals(Quality_value[3])) {
                     ltp.setSummary(getResources().getString(R.string.quality_low));
+                }
+            }
+            if (key.equals("tilt")) {
+                String[] Tilt_value = getResources().getStringArray(R.array.tilt_values);
+                if (ltp.getValue().equals(Tilt_value[0])) {
+                    ltp.setSummary(getResources().getString(R.string.tilt_high));
+                }
+                if (ltp.getValue().equals(Tilt_value[1])) {
+                    ltp.setSummary(getResources().getString(R.string.tilt_normal));
+                }
+                if (ltp.getValue().equals(Tilt_value[2])) {
+                    ltp.setSummary(getResources().getString(R.string.tilt_low));
+                }
+                if (ltp.getValue().equals(Tilt_value[3])) {
+                    ltp.setSummary(getResources().getString(R.string.tilt_off));
                 }
             }
         }

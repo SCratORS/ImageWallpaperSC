@@ -43,6 +43,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import static android.os.AsyncTask.THREAD_POOL_EXECUTOR;
+import static android.view.Surface.*;
 
 class ImageWallpaperSCMediaTexture {
     protected enum FileType {
@@ -55,18 +56,26 @@ class ImageWallpaperSCMediaTexture {
     private final int width;
     private final int height;
     private int width_matrix;
+    private int height_matrix;
     private SurfaceTexture mSurface;
     private int sp_Image;
     private float alpha;
     private Bitmap mBitmap;
     private final int[] mTexture = new int[1];
-    private float picturePosition;
+
+    private float picturePosition_x;
+    private float picturePosition_y;
 
     private float max_speed;
-    private float motion_speed;
-    private float tilt_val = 0;
-    private boolean vector;
-    private float speed;
+    private float motion_speed_x;
+    private float motion_speed_y;
+    private float tilt_val_x = 0;
+    private float tilt_val_y = 0;
+    private int tilt;
+    private boolean vector_x;
+    private boolean vector_y;
+    private float speed_x;
+    private float speed_y;
     private final int screenCount = 5;
     private Point mScreenSize;
     private final int indexLayer;
@@ -81,20 +90,25 @@ class ImageWallpaperSCMediaTexture {
     private final short[] indices = new short[]{0, 1, 2, 0, 2, 3};
     private int fragmentShader;
     private int vertexShader;
-    private final float mSpeedAnimation;
-    private float ScreenHeightCenter;
+    private float mSpeedAnimation;
+    private boolean centeringCamera;
+    private int mRotation;
+    private int mScale;
 
-    ImageWallpaperSCMediaTexture(Context context, Uri filePath, Point screenSize, int Quality, int[] maxTextureWidth, int layout, float speedAnimation, int touch) {
+    ImageWallpaperSCMediaTexture(Context context, Uri filePath, Point screenSize, int Quality, int[] maxTextureWidth, int layout, float speedAnimation, int touch, int tilt_sh, int scale) {
         int xo = 0;
         int yo = 0;
         mSpeedAnimation = speedAnimation;
+        tilt = tilt_sh;
         alpha = 0f;
         max = maxTextureWidth;
+        mScale = scale;
         boolean error = false;
         mScreenSize = screenSize;
         indexLayer = layout;
         touchType = touch;
         ErrorLoad = false;
+        centeringCamera = true;
 
         String mime = context.getContentResolver().getType(filePath);
         if (mime == null || mime.startsWith("image")) {
@@ -136,16 +150,24 @@ class ImageWallpaperSCMediaTexture {
 
         if (!ErrorLoad) {
             Random random = new Random();
-            vector = random.nextInt(2) != 0;
+            vector_x = random.nextInt(2) != 0;
+            vector_y = random.nextInt(2) != 0;
             viewCreate();
         }
     }
 
-    void setParam(int touch, float speedAnimation){
+    void setParam(int touch, float speedAnimation, int tilt_sh, int scale){
         touchType = touch;
-        speed = ((width / (float) mScreenSize.x) -1) * speedAnimation;
+        tilt = tilt_sh;
+        mSpeedAnimation = speedAnimation;
+        mScale = scale;
+        speed_x = ((width / (float) mScreenSize.x) -1) * mSpeedAnimation;
+        speed_y = ((height / (float) mScreenSize.y) -1) * mSpeedAnimation;
     }
 
+    void setCentering(boolean center){
+        centeringCamera = center;
+    }
     void texture() {
         GLES20.glGenTextures(1, mTexture, 0);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + indexLayer);
@@ -180,8 +202,11 @@ class ImageWallpaperSCMediaTexture {
         uvBuffer.position(0);
     }
 
-    void viewRecreate(Point screenSize){
+    void viewRecreate(Point screenSize, int rotation){
+        centeringCamera = !centeringCamera && (mScreenSize.x != screenSize.x || mScreenSize.y != screenSize.y); //Если изменился размер картинки
+        centeringCamera = !centeringCamera && mRotation != rotation; //Если изменилась ориентация
         mScreenSize = screenSize;
+        mRotation = rotation;
         SetupTriangle();
         SetupCameraCenter();
     }
@@ -241,22 +266,35 @@ class ImageWallpaperSCMediaTexture {
     }
 
     void SetupTriangle() {
-
         //скалим размер матрицы под размер экрана
-        float d = (float) height  / mScreenSize.y;
+        Point nScreen = new Point();
+
+        nScreen.x = (int) (mScreenSize.x * (mScale / 100f));
+        nScreen.y = (int) (mScreenSize.y * (mScale / 100f));
+
+        float d = (float) height  / nScreen.y;
         int x = (int) ((float) width / d);
-        int y = mScreenSize.y;
+        int y = nScreen.y;
 
         if (x < mScreenSize.x) {
-            d = (float) width / mScreenSize.x;
+            d = (float) width / nScreen.x;
             y = (int) ((float) height / d);
-            x = mScreenSize.x;
+            x = nScreen.x;
         }
 
-        max_speed = (x - mScreenSize.x) / (float) (screenCount - 1) / 20f;
-        speed = ((x / (float) mScreenSize.x) -1) * mSpeedAnimation;
+        float m_s_x = (x - mScreenSize.x) / (float) (screenCount - 1) / 10f;
+        float m_s_y = (y - mScreenSize.y) / (float) (screenCount - 1) / 10f;
+        max_speed = (m_s_x + m_s_y) / 2;
+
+        speed_x = ((x / (float) mScreenSize.x) -1) * mSpeedAnimation;
+
+
+        speed_y = ((y / (float) mScreenSize.y) -1) * mSpeedAnimation;
+
+        centeringCamera = !centeringCamera && (width_matrix != x || height_matrix != y); //Если изменился масштаб
+
         width_matrix = x;
-        ScreenHeightCenter = ( (float) mScreenSize.y / 2) - (float) (y / 2);
+        height_matrix = y;
 
         float[] vertices = new float[]
                 {0.0f, (float)  y, 0.0f,
@@ -282,18 +320,27 @@ class ImageWallpaperSCMediaTexture {
 
 
     void SetupCameraCenter(){
-        float CenterScreen = ( (float) mScreenSize.x / 2) - (float) (width_matrix / 2);
-        picturePosition = 0;
+        float CenterScreen_x = ( (float) mScreenSize.x / 2) - (float) (width_matrix / 2);
+        float CenterScreen_y = ( (float) mScreenSize.y / 2) - (float) (height_matrix / 2);
+        float currentPosition_x = picturePosition_x; //Запоминаем позицию которая была, если блок-разблок
+        float currentPosition_y = picturePosition_y;
+        picturePosition_x = 0; //Обнуляем
+        picturePosition_y = 0; //Обнуляем
         Matrix.orthoM(matrixProjection, 0, 0f, mScreenSize.x, 0f, mScreenSize.y, 0, 50);
         Matrix.setLookAtM(matrixView, 0, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0.0f);
         Matrix.multiplyMM(matrixProjectionAndView, 0, matrixProjection, 0, matrixView, 0);
-        matrixMove(CenterScreen);
-        ScreenHeightCenter = 0; //Один раз переместили в сентр по вертикали, больше не надо.
+        if (centeringCamera) {
+            matrixMove(CenterScreen_x, CenterScreen_y);
+        } else {
+            matrixMove(currentPosition_x, currentPosition_y);
+        }//Если новая картинка, то центрируем, если нет, то ставим её в то место на котором остановились
+        centeringCamera = false; //Указываем что больше её центрировать не надо
     }
-    private void matrixMove(float x) {
-        Matrix.translateM(matrixView, 0, x, ScreenHeightCenter, 0);
+    private void matrixMove(float x, float y) {
+        Matrix.translateM(matrixView, 0, x, y, 0);
         Matrix.multiplyMM(matrixProjectionAndView, 0, matrixProjection, 0, matrixView, 0);
-        picturePosition += x;
+        picturePosition_x += x;
+        picturePosition_y += y;
     }
 
     private void updateTexImage(){
@@ -385,51 +432,90 @@ class ImageWallpaperSCMediaTexture {
     }
 
     private void tilt_motion(){
-        float value = speed * 5;
-        if (value == 0) value = 0.5f;
-        value = 0 - tilt_val * value;
-        if ((picturePosition + value >= mScreenSize.x - width_matrix) && (picturePosition + value <= 0)) {
-            matrixMove(value);
+        float value_x = tilt_val_x * tilt;
+        float value_y = tilt_val_y * tilt;
+        float r_value_x = 0;
+        float r_value_y = 0;
+        if ((picturePosition_x + value_x >= mScreenSize.x - width_matrix) && (picturePosition_x + value_x <= 0)) {
+            r_value_x = value_x;
         }
+        if ((picturePosition_y + value_y >= mScreenSize.y - height_matrix) && (picturePosition_y + value_y <= 0)) {
+            r_value_y = value_y;
+        }
+        if (r_value_x != 0 || r_value_y != 0 ) matrixMove(r_value_x,r_value_y);
     }
 
     private void motion() {
-        if (speed > 0) {
-            if (vector) {
-                if ((picturePosition - speed) >= (mScreenSize.x - width_matrix)) {
-                    matrixMove(-speed);
+        float r_speed_x, r_speed_y;
+        r_speed_x = 0;
+        r_speed_y = 0;
+        if (speed_x > 0) {
+            if (vector_x) {
+                if ((picturePosition_x - speed_x) >= (mScreenSize.x - width_matrix)) {
+                    r_speed_x = -speed_x;
                 } else {
-                    vector = false;
+                    vector_x = false;
                 }
             } else {
-                if ((picturePosition + speed) <= 0) {
-                    matrixMove(speed);
+                if ((picturePosition_x + speed_x) <= 0) {
+                    r_speed_x = speed_x;
                 } else {
-                    vector = true;
+                    vector_x = true;
                 }
             }
         }
+        if (speed_y > 0) {
+            if (vector_y) {
+                if ((picturePosition_y - speed_y) >= (mScreenSize.y - height_matrix)) {
+                    r_speed_y = -speed_y;
+                } else { vector_y = false; }
+            } else {
+                if ((picturePosition_y + speed_y) <= 0) {
+                    r_speed_y = speed_y;
+                } else { vector_y = true; }
+            }
+        }
+        if (speed_x > 0 || speed_y > 0)  matrixMove(r_speed_x, r_speed_y);
     }
     private void touchMotion() {
+        float r_x = 0f;
+        float r_y = 0f;
         if (touchType>0) {
-            if (motion_speed != 0) {
-                if ((picturePosition + motion_speed > (mScreenSize.x + ((float) width_matrix / 100)) - width_matrix)
-                        && ((picturePosition + motion_speed) < (0 - ((float) width_matrix / 100)))) {
-                    matrixMove(motion_speed);
-                    if (motion_speed > 0) {
-                        motion_speed = (float) (motion_speed - (Math.sqrt(Math.abs(motion_speed)) / screenCount));
-                        if (motion_speed < speed) motion_speed = 0;
+            if (motion_speed_x != 0) {
+                if ((picturePosition_x + motion_speed_x > (mScreenSize.x + ((float) width_matrix / 100)) - width_matrix)
+                        && ((picturePosition_x + motion_speed_x) < (0 - ((float) width_matrix / 100)))) {
+                    r_x = motion_speed_x;
+                    if (motion_speed_x > 0) {
+                        motion_speed_x = (float) (motion_speed_x - (Math.sqrt(Math.abs(motion_speed_x)) / screenCount));
+                        if (motion_speed_x < speed_x) motion_speed_x = 0;
                     } else {
-                        motion_speed = (float) (motion_speed + (Math.sqrt(Math.abs(motion_speed)) / screenCount));
-                        if (motion_speed > -speed) motion_speed = 0;
+                        motion_speed_x = (float) (motion_speed_x + (Math.sqrt(Math.abs(motion_speed_x)) / screenCount));
+                        if (motion_speed_x > -speed_x) motion_speed_x = 0;
                     }
-                } else  motion_speed = 0;
+                } else  motion_speed_x = 0;
             }
+            if (motion_speed_y != 0) {
+                if ((picturePosition_y + motion_speed_y > (mScreenSize.y + ((float) height_matrix / 100)) - height_matrix)
+                        && ((picturePosition_y + motion_speed_y) < (0 - ((float) height_matrix / 100)))) {
+                    r_y = motion_speed_y;
+                    if (motion_speed_y > 0) {
+                        motion_speed_y = (float) (motion_speed_y - (Math.sqrt(Math.abs(motion_speed_y)) / screenCount));
+                        if (motion_speed_y < speed_y) motion_speed_y = 0;
+                    } else {
+                        motion_speed_y = (float) (motion_speed_y + (Math.sqrt(Math.abs(motion_speed_y)) / screenCount));
+                        if (motion_speed_y > -speed_y) motion_speed_y = 0;
+                    }
+                } else  motion_speed_y = 0;
+            }
+            if (r_x != 0 || r_y != 0) matrixMove(r_x, r_y);
         }
     }
 
     int getWidth(){
         return width_matrix;
+    }
+    int getHeight(){
+        return height_matrix;
     }
 
     void release(){
@@ -464,24 +550,43 @@ class ImageWallpaperSCMediaTexture {
             }
         }
     }
+
     void update(){
         if (alpha < 1.0f) alpha +=0.02f;
         if (alpha > 1.0f) alpha = 1f;
         updateTexImage();
-        if (motion_speed != 0) {touchMotion();} else {motion();}
+        if (motion_speed_x != 0 || motion_speed_y != 0) {touchMotion();} else {motion();}
         tilt_motion();
     }
+
     float getAlpha(){
         return alpha;
     }
-    void setMotionSpeed(float speed){
-        motion_speed = speed;
+    void setMotionSpeed(float speed_x, float speed_y){
+        motion_speed_x = speed_x;
+        motion_speed_y = -speed_y;
     }
+    void setTiltValue(float s0, float s1){
+        switch (mRotation) {
+            case ROTATION_90:
+                tilt_val_x = s0;
+                tilt_val_y = s1;
+                break;
+            case ROTATION_180:
+                tilt_val_x = -s1;
+                tilt_val_y = s0;
+                break;
+            case ROTATION_270:
+                tilt_val_x = -s0;
+                tilt_val_y = -s1;
+                break;
+            default:
+                tilt_val_x = s1;
+                tilt_val_y = -s0;
+                break;
+        }
 
-    void setTiltValue(float y){
-        tilt_val = y;
     }
-
     float getMaxSpeed(){
         return max_speed;
     }
@@ -495,6 +600,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     private final int[] Action = new int[] {0, 0};           //Текущее действие для текстуры
     private VelocityTracker j;
     private float offsetX = 0f;
+    private float offsetY = 0f;
     private final Random random = new Random();
     private long TimeChange;
     private final Point mScreenSize = new Point();
@@ -507,8 +613,9 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     private long TimeSet = 20 * 60000;
     private float SetSpeed = 0.2f;
     private int Quality = 2;
-    private boolean tilt = false;
+    private int tilt = 0;
     private boolean double_tap = true;
+    private int scale = 100;
     private int touch = 2;
     private boolean VolumeEnable = false;
     private final int[] max = new int[1];
@@ -554,12 +661,16 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        GLES20.glViewport(0, 0, width, height);
-        mScreenSize.x = width;
-        mScreenSize.y = height;
+        Point newScreenSize = new Point();
+        newScreenSize.x = width;
+        newScreenSize.y = height;
+        int mRotate;
+        WindowManager windowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+        assert windowManager != null;
+        mRotate = windowManager.getDefaultDisplay().getRotation();
+        GLES20.glViewport(0, 0, newScreenSize.x, newScreenSize.y);
         for (int i = 0; i<2; i++)
-            if (mediaTextures[i]!=null) mediaTextures[i].viewRecreate(mScreenSize);
-
+            if (mediaTextures[i]!=null) mediaTextures[i].viewRecreate(newScreenSize, mRotate);
     }
 
     private void ProgramAnimate(int layer) {
@@ -575,6 +686,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
                 if (mediaTextures[layer]!=null) {
                     mediaTextures[layer].texture();
                     mediaTextures[layer].SetupTriangle();
+                    mediaTextures[layer].setCentering(true);
                     mediaTextures[layer].SetupCameraCenter();
                 }
                 Action[layer]++;
@@ -620,18 +732,19 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         }
     }
 
-        void onOffsetsChanged(float xOffset) {
+        void onOffsetsChanged(float xOffset, float yOffset) {
             if (touch == 2) {
                 for (int i = 0; i < 2; i++)
-                    if (mediaTextures[i]!=null) mediaTextures[i].setMotionSpeed((mediaTextures[i].getWidth() - mScreenSize.x) * (offsetX - xOffset));
+                    if (mediaTextures[i]!=null) mediaTextures[i].setMotionSpeed((mediaTextures[i].getWidth() - mScreenSize.x) * (offsetX - xOffset), (mediaTextures[i].getHeight() - mScreenSize.y) * (offsetY - yOffset));
                 offsetX = xOffset;
+                offsetY = yOffset;
             }
         }
 
-        void Sensor_Event(float y_value) {
-            if (tilt) {
+        void Sensor_Event(float s0, float s1) {
+            if (tilt != 0) {
                 for (int i = 0; i < 2; i++)
-                    if (mediaTextures[i]!=null) mediaTextures[i].setTiltValue(y_value);
+                    if (mediaTextures[i]!=null) mediaTextures[i].setTiltValue(s0, s1);
             }
         }
 
@@ -652,7 +765,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
                         for (int i = 0; i < 2; i++) {
                             if (mediaTextures[i]!=null) {
                                 j.computeCurrentVelocity((int) mediaTextures[i].getMaxSpeed(), mediaTextures[i].getMaxSpeed());
-                                mediaTextures[i].setMotionSpeed(j.getXVelocity());
+                                mediaTextures[i].setMotionSpeed(j.getXVelocity(), j.getYVelocity());
                             }
                         }
                         break;
@@ -675,7 +788,6 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         }
 
         private ArrayList<DocumentFile> listFilesWithFolders(Uri folder) { //NullPointerException
-            mContext.getContentResolver().takePersistableUriPermission(folder, Intent.FLAG_GRANT_READ_URI_PERMISSION);
             ArrayList<DocumentFile> files = new ArrayList<>();
             if (folder.isAbsolute()) {
                 DocumentFile documentsTree = DocumentFile.fromTreeUri(mContext, folder);
@@ -692,7 +804,6 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
             for(String path : pathSet){
                 Uri file = Uri.parse(path);
                 if (file.isAbsolute()) {
-                    mContext.getContentResolver().takePersistableUriPermission(file, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     documentFiles.add(DocumentFile.fromSingleUri(mContext, file));
                 }
             }
@@ -732,7 +843,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
                 mediaTextures[currentTexture].release();
                 mediaTextures[currentTexture] = null;
             }
-            mediaTextures[currentTexture] = new ImageWallpaperSCMediaTexture(mContext, FileName, mScreenSize, Quality, max, currentTexture, SetSpeed, touch);
+            mediaTextures[currentTexture] = new ImageWallpaperSCMediaTexture(mContext, FileName, mScreenSize, Quality, max, currentTexture, SetSpeed, touch, tilt, scale);
             return null;
         }
 
@@ -751,7 +862,7 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
     boolean getDoubleTapSetting(){
         return double_tap;
     }
-    boolean getTiltSetting(){
+    int getTiltSetting(){
         return tilt;
     }
 
@@ -788,14 +899,14 @@ class ImageWallpaperSCRender implements GLSurfaceView.Renderer, SurfaceTexture.O
         Timer = StrToIntDef(PreferenceManager.getDefaultSharedPreferences(mContext).getString("duration","20"));
         TimeSet = Timer * 60000;
         touch = Integer.parseInt(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("touch", "2")));
-        tilt = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("tilt",false);
+        tilt = Integer.parseInt(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("tilt", "0")));
         SetSpeed = Float.parseFloat(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("speed", "0.5")));
         Quality = Integer.parseInt(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("quality", "2")));
+        scale = Integer.parseInt(Objects.requireNonNull(PreferenceManager.getDefaultSharedPreferences(mContext).getString("scale", "100")));
         VolumeEnable = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("sound",false);
 
         for (int i=0; i<2; i++) if (mediaTextures[i] != null) {
-            if (!tilt) mediaTextures[i].setTiltValue(0);
-            mediaTextures[i].setParam(touch, SetSpeed);
+            mediaTextures[i].setParam(touch, SetSpeed, tilt, scale);
         }
     }
 

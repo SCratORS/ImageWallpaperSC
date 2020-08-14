@@ -59,7 +59,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
         public void onSensorChanged(SensorEvent event) {
             if (event.sensor.getType() != Sensor.TYPE_GYROSCOPE)
                 return;
-            mRender.Sensor_Event(event.values[1]);
+            mRender.Sensor_Event(event.values[0], event.values[1]);
         }
 
         @Override
@@ -121,7 +121,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
             if (rendererHasBeenSet) {
                 if (visible) {
                     mRender.loadParam(getContext());
-                    if (mRender.getTiltSetting()) createSensor(getContext());
+                    if (mRender.getTiltSetting() != 0) createSensor(getContext());
                     glSurfaceView.onResume();
                     gestureDetector = new GestureDetector(getContext(), new GestureListener());
                     mRender.onResume();
@@ -170,7 +170,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
         public void onOffsetsChanged(float xOffset, float yOffset,
                                      float xOffsetStep, float yOffsetStep, int xPixelOffset,
                                      int yPixelOffset) {
-            mRender.onOffsetsChanged(xOffset);
+            mRender.onOffsetsChanged(xOffset, yOffset);
         }
 
         private class GestureListener extends GestureDetector.SimpleOnGestureListener {
@@ -184,7 +184,7 @@ abstract class ImageWallpaperSC extends WallpaperService {
             public boolean onDoubleTap(MotionEvent e) {
                 mRender.loadParam(getContext());
 
-                if (mRender.getTiltSetting()) {
+                if (mRender.getTiltSetting() != 0) {
                     if (mSensorManager == null) createSensor(getContext());
                 } else if (mSensorManager != null) destroySensor();
 
