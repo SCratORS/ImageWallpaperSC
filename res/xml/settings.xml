@@ -27,6 +27,13 @@
         android:defaultValue="2"
         android:entries="@array/quality_title"
         android:entryValues="@array/quality_values"/>
+    <ListPreference
+        android:key="scale"
+        android:title="@string/scale"
+        android:summary="@string/scale_100"
+        android:defaultValue="100"
+        android:entries="@array/scale_title"
+        android:entryValues="@array/scale_values"/>
     <EditTextPreference
         android:key="duration"
         android:title="@string/duration"
@@ -47,21 +54,20 @@
         android:defaultValue="2"
         android:entries="@array/touch_title"
         android:entryValues="@array/touch_values"/>
-    <SwitchPreference
-        android:defaultValue="false"
+    <ListPreference
         android:key="tilt"
         android:title="@string/tilt_action"
-        android:summary="@string/tilt_action_summary" />
+        android:summary="@string/tilt_normal"
+        android:defaultValue="5"
+        android:entries="@array/tilt_title"
+        android:entryValues="@array/tilt_values"/>
     <SwitchPreference
         android:defaultValue="true"
         android:key="double_tap"
         android:title="@string/double_tap"
         android:summary="@string/double_tap_summary" />
-    <PreferenceCategory android:title="@string/filter" />
     <SwitchPreference
         android:defaultValue="false"
-        android:disableDependentsState="false"
-        android:icon="@drawable/ic_snd"
         android:key="sound"
         android:summary="@string/sound_summary"
         android:title="@string/sound" />
